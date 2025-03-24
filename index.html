@@ -6,6 +6,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/dracula.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/default.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/hint/show-hint.min.css">
     <style>
         :root {
             --editor-bg-primary: #ffffff;
@@ -93,6 +94,7 @@
 
         .mode-toggle label {
             margin-right: 10px;
+            margin-left: 20px;
         }
 
         .save-status {
@@ -125,6 +127,8 @@
                 <div class="mode-toggle">
                     <label for="darkModeToggle">Dark Mode</label>
                     <input type="checkbox" id="darkModeToggle" onchange="toggleDarkMode()">
+                    <label for="autocompleteToggle">Autocomplete</label>
+                    <input type="checkbox" id="autocompleteToggle" onchange="toggleAutocomplete()">
                 </div>
             </div>
         </div>
@@ -137,6 +141,11 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/xml/xml.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/javascript/javascript.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/css/css.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/hint/show-hint.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/hint/xml-hint.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/hint/html-hint.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/closetag.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/fold/xml-fold.min.js"></script>
 
     <script>
         const container = document.querySelector('.container');
@@ -144,6 +153,7 @@
         const editorWrapper = document.querySelector('.editor-wrapper');
         const preview = document.getElementById('preview');
         const darkModeToggle = document.getElementById('darkModeToggle');
+        const autocompleteToggle = document.getElementById('autocompleteToggle');
         const saveStatus = document.getElementById('saveStatus');
 
         // Initialize CodeMirror
@@ -153,8 +163,14 @@
             lineNumbers: true,
             autoCloseTags: true,
             lineWrapping: true,
+            tabSize: 2,
+            indentUnit: 2,
+            indentWithTabs: false,
+            smartIndent: true,
+            hintOptions: {
+                completeSingle: false
+            },
             extraKeys: {
-                "Alt-ScrollLock": "toggleWordWrap",
                 "Tab": function(cm) {
                     if (cm.somethingSelected()) {
                         cm.indentSelection(2);
@@ -164,6 +180,22 @@
                 }
             }
         });
+
+        // Autocomplete trigger
+        editor.on('inputRead', function(cm, change) {
+            if (autocompleteToggle.checked && (change.text[0] === '<' || change.text[0] === ' ')) {
+                cm.showHint({
+                    hint: CodeMirror.hint.html,
+                    completeSingle: false
+                });
+            }
+        });
+
+        // Toggle autocomplete and save preference
+        function toggleAutocomplete() {
+            const isEnabled = autocompleteToggle.checked;
+            localStorage.setItem('htmlPlaygroundAutocomplete', isEnabled);
+        }
 
         // Resize functionality
         function initResize() {
@@ -181,7 +213,6 @@
 
                 const containerWidth = container.clientWidth;
                 const mouseXRelativeToContainer = e.clientX - container.getBoundingClientRect().left;
-                
                 const minWidth = 100;
                 const maxWidth = containerWidth - minWidth;
                 const newLeftWidth = Math.max(minWidth, Math.min(mouseXRelativeToContainer, maxWidth));
@@ -267,30 +298,29 @@
         function toggleDarkMode() {
             document.body.classList.toggle('dark-mode');
             const isDarkMode = document.body.classList.contains('dark-mode');
-            
-            // Update CodeMirror theme
             editor.setOption('theme', isDarkMode ? 'dracula' : 'default');
-            
-            // Save mode preference
             localStorage.setItem('htmlPlaygroundDarkMode', isDarkMode);
         }
 
-        // Load saved preferences on startup
+        // Load saved preferences
         function loadSavedPreferences() {
-            // Load saved code
             const savedCode = localStorage.getItem('htmlPlaygroundCode');
             if (savedCode) {
                 editor.setValue(savedCode);
                 updatePreview();
             }
 
-            // Load dark mode preference
             const savedDarkMode = localStorage.getItem('htmlPlaygroundDarkMode') === 'true';
             if (savedDarkMode) {
                 darkModeToggle.checked = true;
                 document.body.classList.add('dark-mode');
                 editor.setOption('theme', 'dracula');
             }
+
+            const savedAutocomplete = localStorage.getItem('htmlPlaygroundAutocomplete');
+            const isAutocompleteEnabled = savedAutocomplete !== null ? savedAutocomplete === 'true' : true;
+            autocompleteToggle.checked = isAutocompleteEnabled;
+            localStorage.setItem('htmlPlaygroundAutocomplete', isAutocompleteEnabled);
         }
 
         // Initialize
