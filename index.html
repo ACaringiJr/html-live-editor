@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>HTML Playground | Live Code Editor</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/dracula.min.css">
+    <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            font-family: Arial, sans-serif;
+        }
+        .container {
+            display: grid;
+            grid-template-columns: 1fr 5px 1fr;
+            height: 100vh;
+        }
+        .editor-wrapper {
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .CodeMirror {
+            flex-grow: 1;
+            height: auto !important;
+        }
+        .resizer {
+            background: #ccc;
+            cursor: col-resize;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+            position: relative;
+        }
+        .resizer::after {
+            content: '⋮';
+            color: #666;
+            font-size: 20px;
+        }
+        .resizer:hover {
+            background: #999;
+        }
+        #preview {
+            overflow: auto;
+            pointer-events: none;
+        }
+        .buttons {
+            padding: 10px;
+            background: #f0f0f0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="editor-wrapper">
+            <textarea id="codeInput"><!DOCTYPE html>
+<html>
+<head>
+    <title>My Page</title>
+</head>
+<body>
+    <h1>Hello World!</h1>
+</body>
+</html></textarea>
+            <div class="buttons">
+                <button onclick="updatePreview()">Update Preview</button>
+                <button onclick="popOutCode()">Pop Out Code</button>
+            </div>
+        </div>
+        <div class="resizer"></div>
+        <div id="preview"></div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/htmlmixed/htmlmixed.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/xml/xml.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/javascript/javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/css/css.min.js"></script>
+
+    <script>
+        const container = document.querySelector('.container');
+        const resizer = document.querySelector('.resizer');
+        const editorWrapper = document.querySelector('.editor-wrapper');
+        const preview = document.getElementById('preview');
+
+        // Initialize CodeMirror
+        const editor = CodeMirror.fromTextArea(document.getElementById('codeInput'), {
+            mode: 'htmlmixed',
+            theme: 'dracula',
+            lineNumbers: true,
+            autoCloseTags: true,
+            lineWrapping: true, // Add word wrap
+            extraKeys: {
+                // Optional: add horizontal scroll if needed
+                "Alt-ScrollLock": "toggleWordWrap"
+            }
+        });
+
+        // Resize functionality
+        function initResize() {
+            let isResizing = false;
+
+            resizer.addEventListener('mousedown', (e) => {
+                e.preventDefault();
+                isResizing = true;
+                document.body.style.cursor = 'col-resize';
+                
+                // Disable preview interactions during resize
+                preview.style.pointerEvents = 'none';
+            });
+
+            document.addEventListener('mousemove', (e) => {
+                if (!isResizing) return;
+
+                // Calculate the new column sizes based on mouse position
+                const containerWidth = container.clientWidth;
+                const mouseXRelativeToContainer = e.clientX - container.getBoundingClientRect().left;
+                
+                // Prevent extreme resizing
+                const minWidth = 100;
+                const maxWidth = containerWidth - minWidth;
+                const newLeftWidth = Math.max(minWidth, Math.min(mouseXRelativeToContainer, maxWidth));
+                
+                // Update grid columns
+                container.style.gridTemplateColumns = 
+                    `${newLeftWidth}px 5px ${containerWidth - newLeftWidth - 5}px`;
+                
+                // Refresh CodeMirror to adjust to new size
+                editor.refresh();
+            });
+
+            document.addEventListener('mouseup', () => {
+                if (isResizing) {
+                    isResizing = false;
+                    document.body.style.cursor = 'default';
+                    
+                    // Re-enable preview interactions
+                    preview.style.pointerEvents = 'auto';
+                }
+            });
+
+            // Prevent dragging from getting stuck if mouse leaves window
+            document.addEventListener('mouseleave', () => {
+                if (isResizing) {
+                    isResizing = false;
+                    document.body.style.cursor = 'default';
+                    preview.style.pointerEvents = 'auto';
+                }
+            });
+        }
+
+        // Preview functionality
+        function updatePreview() {
+            const code = editor.getValue();
+            const iframe = document.createElement('iframe');
+            iframe.style.width = '100%';
+            iframe.style.height = '100%';
+            iframe.style.border = 'none';
+            
+            preview.innerHTML = '';
+            preview.appendChild(iframe);
+            
+            const doc = iframe.contentDocument || iframe.contentWindow.document;
+            doc.open();
+            doc.write(code);
+            doc.close();
+        }
+
+        // Pop out code functionality
+        function popOutCode() {
+            const code = editor.getValue();
+            const blob = new Blob([code], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            window.open(url, '_blank');
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+        }
+
+        // Initialize
+        initResize();
+        updatePreview();
+
+        // Auto-update preview on changes
+        editor.on('change', () => {
+            setTimeout(updatePreview, 500);
+        });
+    </script>
+</body>
+</html>
