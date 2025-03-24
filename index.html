@@ -146,6 +146,9 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/hint/html-hint.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/closetag.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/fold/xml-fold.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/closebrackets.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/closetag.min.js"></script>
+
 
     <script>
         const container = document.querySelector('.container');
@@ -162,22 +165,22 @@
             theme: 'default',
             lineNumbers: true,
             autoCloseTags: true,
+            autoCloseBrackets: true, // Automatically close brackets
             lineWrapping: true,
-            tabSize: 2,
-            indentUnit: 2,
-            indentWithTabs: false,
-            smartIndent: true,
             hintOptions: {
                 completeSingle: false
             },
             extraKeys: {
+                "Alt-ScrollLock": "toggleWordWrap",
                 "Tab": function(cm) {
                     if (cm.somethingSelected()) {
                         cm.indentSelection(2);
                     } else {
                         cm.replaceSelection("  ");
                     }
-                }
+                },
+                "Ctrl-Space": "autocomplete",
+                "Ctrl-F": "findPersistent"
             }
         });
 
