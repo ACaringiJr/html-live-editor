@@ -57,14 +57,15 @@
 <body>
     <div class="container">
         <div class="editor-wrapper">
-            <textarea id="codeInput"><!DOCTYPE html>
+            <textarea id="codeInput">
+<!DOCTYPE html>
 <html>
-<head>
+  <head>
     <title>My Page</title>
-</head>
-<body>
+  </head>
+  <body>
     <h1>Hello World!</h1>
-</body>
+  </body>
 </html></textarea>
             <div class="buttons">
                 <button onclick="updatePreview()">Update Preview</button>
@@ -96,7 +97,15 @@
             lineWrapping: true, // Add word wrap
             extraKeys: {
                 // Optional: add horizontal scroll if needed
-                "Alt-ScrollLock": "toggleWordWrap"
+                "Alt-ScrollLock": "toggleWordWrap",
+                "Tab": function(cm) {
+                    if (cm.somethingSelected()) {
+                        // Explicitly indent by 4 spaces across all selected lines
+                        cm.indentSelection(2);
+                    } else {
+                        cm.replaceSelection("  ");
+                    }
+                }
             }
         });
 
