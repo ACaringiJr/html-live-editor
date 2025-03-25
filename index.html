@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <title>HTML Playground | Live Code Editor</title>
   <link rel="icon" type="image/x-icon" href="https://img.icons8.com/?size=256&id=20909&format=png">
-  
+
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/dracula.min.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/default.min.css">
@@ -15,6 +15,10 @@
       --editor-bg-secondary: #f0f0f0;
       --editor-text-primary: #000000;
       --editor-border-color: #cccccc;
+      /* Highlight colors for light mode */
+      --highlight-bg: #d3d3d3; /* Light gray for occurrences */
+      --match-bracket-outline: #44475a;
+      --match-bracket-color: #ff0000; /* Red for bracket text */
     }
     /* Dark mode styling applied to the editor only */
     .editor-wrapper.dark-mode {
@@ -22,6 +26,10 @@
       --editor-bg-secondary: #44475a;
       --editor-text-primary: #f8f8f2;
       --editor-border-color: #6272a4;
+      /* Highlight colors for dark mode */
+      --highlight-bg: #6272a4; /* Muted blue for occurrences */
+      --match-bracket-outline: #ffffff; /* White outline */
+      --match-bracket-color: #ff5555; /* Light red for bracket text */
     }
     html, body {
       height: 100%;
@@ -33,6 +41,7 @@
     .container {
       display: grid;
       grid-template-columns: 1fr 5px 1fr;
+      grid-template-rows: 100%;
       height: 100vh;
     }
     .editor-wrapper {
@@ -40,7 +49,7 @@
       flex-direction: column;
       overflow: hidden;
       background-color: var(--editor-bg-primary);
-      position: relative; /* Added for absolute positioning of modal */
+      position: relative;
     }
     .CodeMirror {
       flex-grow: 1;
@@ -65,10 +74,45 @@
     .resizer:hover {
       background: #999;
     }
+    #rightPanel {
+      display: grid;
+      grid-template-rows: 1fr 5px 150px;
+      height: 100%;
+    }
     #preview {
       overflow: auto;
-      background: var(--editor-bg-secondary); /* Always light-colored */
+      background: var(--editor-bg-secondary);
     }
+    .vertical-resizer {
+      background: #ccc;
+      cursor: row-resize;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+    }
+    .vertical-resizer::after {
+      content: '─';
+      color: #666;
+      font-size: 20px;
+    }
+    .vertical-resizer:hover {
+      background: #999;
+    }
+    #consoleSection {
+      background: #1a1a1a;
+      color: #ffffff;
+      font-family: monospace;
+      padding: 10px;
+      overflow-y: auto;
+    }
+    .console-log {
+      margin: 2px 0;
+      word-wrap: break-word;
+    }
+    .console-log.log { color: #ffffff; }
+    .console-log.error { color: #ff6b6b; }
+    .console-log.warn { color: #feca57; }
     .buttons {
       padding: 10px;
       background: var(--editor-bg-secondary);
@@ -105,16 +149,15 @@
       margin-left: 10px;
     }
     .CodeMirror .highlight-occurrence {
-      background-color: #808080;
+      background-color: var(--highlight-bg);
       opacity: 1;
     }
     .CodeMirror .CodeMirror-matchingbracket {
-      background-color: #808080;
-      color: #ff0000;
+      background-color: var(--match-bracket-bg);
+      color: var(--match-bracket-color);
       font-weight: bold;
-      outline: 1px solid #bbbbbb;
+      outline: 1px solid var(--match-bracket-outline);
     }
-    /* Floating Find & Replace Modal */
     #findReplaceModal {
       position: absolute;
       top: 10px;
@@ -193,6 +236,7 @@
           <button onclick="exportHTML()">Export HTML</button>
           <button onclick="document.getElementById('fileInput').click()">Import HTML</button>
           <button onclick="toggleFindReplace()">Find/Replace</button>
+          <button onclick="toggleConsole()">Toggle Console</button>
           <span id="saveStatus" class="save-status"></span>
         </div>
         <div class="mode-toggle">
@@ -202,8 +246,6 @@
           <input type="checkbox" id="autocompleteToggle" onchange="toggleAutocomplete()">
         </div>
       </div>
-      
-      <!-- Floating Find & Replace Modal -->
       <div id="findReplaceModal">
         <div class="draggable-handle">⠶ Find & Replace</div>
         <button class="close-btn" onclick="toggleFindReplace()">&times;</button>
@@ -217,13 +259,17 @@
       </div>
     </div>
     <div class="resizer"></div>
-    <div id="preview"></div>
+    <div id="rightPanel">
+      <div id="preview"></div>
+      <div class="vertical-resizer" id="verticalResizer"></div>
+      <div id="consoleSection">
+        <div id="consoleOutput"></div>
+      </div>
+    </div>
   </div>
 
-  <!-- Hidden File Input -->
   <input type="file" id="fileInput" accept=".html" style="display: none;">
 
-  <!-- CodeMirror Scripts -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/htmlmixed/htmlmixed.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/xml/xml.min.js"></script>
@@ -242,11 +288,11 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/matchbrackets.min.js"></script>
 
   <script>
-    // DOM Elements
     const container = document.querySelector('.container');
     const resizer = document.querySelector('.resizer');
     const editorWrapper = document.getElementById('editorWrapper');
     const preview = document.getElementById('preview');
+    const rightPanel = document.getElementById('rightPanel');
     const darkModeToggle = document.getElementById('darkModeToggle');
     const autocompleteToggle = document.getElementById('autocompleteToggle');
     const saveStatus = document.getElementById('saveStatus');
@@ -255,8 +301,8 @@
     const findTextInput = document.getElementById('findText');
     const replaceTextInput = document.getElementById('replaceText');
     const findReplaceHandle = findReplaceModal.querySelector('.draggable-handle');
+    const verticalResizer = document.getElementById('verticalResizer');
 
-    // Initialize CodeMirror
     const editor = CodeMirror.fromTextArea(document.getElementById('codeInput'), {
       mode: 'htmlmixed',
       theme: 'default',
@@ -291,7 +337,64 @@
       }
     });
 
-    // Enhanced Autocomplete Trigger
+    function setupConsoleCapture() {
+      const consoleOutput = document.getElementById('consoleOutput');
+      const originalConsole = {
+        log: console.log,
+        warn: console.warn,
+        error: console.error
+      };
+
+      function createLogElement(message, type) {
+        const logElement = document.createElement('div');
+        logElement.classList.add('console-log', type);
+        if (typeof message === 'object') {
+          try {
+            logElement.textContent = JSON.stringify(message, null, 2);
+          } catch {
+            logElement.textContent = String(message);
+          }
+        } else {
+          logElement.textContent = String(message);
+        }
+        return logElement;
+      }
+
+      console.log = function(...args) {
+        args.forEach(arg => {
+          consoleOutput.appendChild(createLogElement(arg, 'log'));
+        });
+        originalConsole.log(...args);
+      };
+
+      console.warn = function(...args) {
+        args.forEach(arg => {
+          consoleOutput.appendChild(createLogElement(arg, 'warn'));
+        });
+        originalConsole.warn(...args);
+      };
+
+      console.error = function(...args) {
+        args.forEach(arg => {
+          consoleOutput.appendChild(createLogElement(arg, 'error'));
+        });
+        originalConsole.error(...args);
+      };
+    }
+
+    function toggleConsole() {
+      const consoleSection = document.getElementById('consoleSection');
+      if (consoleSection.style.display === 'none' || consoleSection.style.display === '') {
+        consoleSection.style.display = 'block';
+        verticalResizer.style.display = 'flex';
+        rightPanel.style.gridTemplateRows = `1fr 5px 150px`;
+      } else {
+        consoleSection.style.display = 'none';
+        verticalResizer.style.display = 'none';
+        rightPanel.style.gridTemplateRows = `1fr`;
+      }
+    }
+
     editor.on('keyup', (cm, event) => {
       if (!autocompleteToggle.checked) return;
       const triggers = /[a-zA-Z<>="'\s]/;
@@ -300,7 +403,6 @@
       }
     });
 
-    // Highlight occurrences of selected text
     editor.on('cursorActivity', function(cm) {
       cm.getAllMarks().forEach(marker => {
         if (marker.className === 'highlight-occurrence') marker.clear();
@@ -314,12 +416,10 @@
       }
     });
 
-    // Refresh CodeMirror on focus
     editor.on('focus', function(cm) {
       cm.refresh();
     });
 
-    // Debounced Preview Update & AutoSave
     let previewTimeout;
     editor.on('change', () => {
       clearTimeout(previewTimeout);
@@ -327,8 +427,10 @@
       autoSave();
     });
 
-    // Update Preview Function (output remains in light mode)
     function updatePreview() {
+      const consoleOutput = document.getElementById('consoleOutput');
+      consoleOutput.innerHTML = '';
+
       const code = editor.getValue();
       const iframe = document.createElement('iframe');
       iframe.style.width = '100%';
@@ -337,12 +439,39 @@
       preview.innerHTML = '';
       preview.appendChild(iframe);
       const doc = iframe.contentDocument || iframe.contentWindow.document;
+      
+      iframe.contentWindow.console = {
+        log: (...args) => {
+          args.forEach(arg => {
+            const logElement = document.createElement('div');
+            logElement.classList.add('console-log', 'log');
+            logElement.textContent = String(arg);
+            consoleOutput.appendChild(logElement);
+          });
+        },
+        warn: (...args) => {
+          args.forEach(arg => {
+            const logElement = document.createElement('div');
+            logElement.classList.add('console-log', 'warn');
+            logElement.textContent = String(arg);
+            consoleOutput.appendChild(logElement);
+          });
+        },
+        error: (...args) => {
+          args.forEach(arg => {
+            const logElement = document.createElement('div');
+            logElement.classList.add('console-log', 'error');
+            logElement.textContent = String(arg);
+            consoleOutput.appendChild(logElement);
+          });
+        }
+      };
+
       doc.open();
       doc.write(code);
       doc.close();
     }
 
-    // Pop Out Code Function
     function popOutCode() {
       const code = editor.getValue();
       const blob = new Blob([code], { type: 'text/html' });
@@ -351,7 +480,6 @@
       setTimeout(() => URL.revokeObjectURL(url), 1000);
     }
 
-    // Export HTML Function
     function exportHTML() {
       const code = editor.getValue();
       const blob = new Blob([code], { type: 'text/html' });
@@ -365,7 +493,6 @@
       setTimeout(() => URL.revokeObjectURL(url), 1000);
     }
 
-    // File Import Functionality
     fileInput.addEventListener("change", function (event) {
       const file = event.target.files[0];
       if (!file) return;
@@ -376,14 +503,11 @@
       reader.readAsText(file);
     });
 
-    // Find & Replace Modal Functions
     function toggleFindReplace() {
       findReplaceModal.style.display = 
         findReplaceModal.style.display === 'block' ? 'none' : 'block';
       findTextInput.value = '';
       replaceTextInput.value = '';
-      
-      // Clear previous highlights when toggling off
       if (findReplaceModal.style.display === 'none') {
         editor.getAllMarks().forEach(marker => {
           if (marker.className === 'highlight-occurrence') marker.clear();
@@ -391,7 +515,6 @@
       }
     }
 
-    // Draggable Find & Replace Modal
     let isDraggingModal = false;
     let modalOffsetX, modalOffsetY;
 
@@ -399,23 +522,16 @@
       isDraggingModal = true;
       modalOffsetX = e.clientX - findReplaceModal.offsetLeft;
       modalOffsetY = e.clientY - findReplaceModal.offsetTop;
-      
-      // Prevent text selection during drag
       e.preventDefault();
     });
 
     document.addEventListener('mousemove', (e) => {
       if (!isDraggingModal) return;
-      
-      // Calculate new position
       let newX = e.clientX - modalOffsetX;
       let newY = e.clientY - modalOffsetY;
-      
-      // Constrain to editor wrapper bounds
       const editorRect = editorWrapper.getBoundingClientRect();
       newX = Math.max(0, Math.min(newX, editorRect.width - findReplaceModal.offsetWidth));
       newY = Math.max(0, Math.min(newY, editorRect.height - findReplaceModal.offsetHeight));
-      
       findReplaceModal.style.left = `${newX}px`;
       findReplaceModal.style.top = `${newY}px`;
       findReplaceModal.style.right = 'auto';
@@ -426,10 +542,8 @@
       isDraggingModal = false;
     });
 
-    // Function to highlight all occurrences without replacing
     function executeFind() {
       editor.operation(() => {
-        // Clear previous highlights
         editor.getAllMarks().forEach(marker => {
           if (marker.className === 'highlight-occurrence') marker.clear();
         });
@@ -442,7 +556,6 @@
       });
     }
 
-    // Function for find & replace actions
     function executeFindReplace(replaceAll) {
       const findText = findTextInput.value;
       const replaceText = replaceTextInput.value;
@@ -472,11 +585,9 @@
       updatePreview();
       autoSave();
       setTimeout(() => saveStatus.textContent = "", 2000);
-      // Refresh highlights after replacement
       executeFind();
     }
 
-    // AutoSave Functionality
     let saveTimeout;
     function autoSave() {
       clearTimeout(saveTimeout);
@@ -488,13 +599,11 @@
       }, 1000);
     }
 
-    // Toggle Autocomplete and Save Preference
     function toggleAutocomplete() {
       const isEnabled = autocompleteToggle.checked;
       localStorage.setItem('htmlPlaygroundAutocomplete', isEnabled);
     }
 
-    // Toggle Dark Mode on the editor (UI only)
     function toggleDarkMode() {
       editorWrapper.classList.toggle('dark-mode');
       const isDarkMode = editorWrapper.classList.contains('dark-mode');
@@ -502,7 +611,6 @@
       localStorage.setItem('htmlPlaygroundDarkMode', isDarkMode);
     }
 
-    // Load Saved Preferences
     function loadSavedPreferences() {
       const savedCode = localStorage.getItem('htmlPlaygroundCode');
       if (savedCode) {
@@ -521,17 +629,16 @@
       localStorage.setItem('htmlPlaygroundAutocomplete', isAutocompleteEnabled);
     }
 
-    // Resizable Panels (Drag-and-Drop)
     let isDragging = false;
     resizer.addEventListener("pointerdown", (e) => {
       isDragging = true;
       document.body.style.cursor = 'col-resize';
-      preview.style.pointerEvents = 'none';
+      rightPanel.style.pointerEvents = 'none';
       document.addEventListener("pointermove", resizePanels);
       document.addEventListener("pointerup", () => {
         isDragging = false;
         document.body.style.cursor = 'default';
-        preview.style.pointerEvents = 'auto';
+        rightPanel.style.pointerEvents = 'auto';
         document.removeEventListener("pointermove", resizePanels);
       });
     });
@@ -546,9 +653,35 @@
       editor.refresh();
     }
 
-    // Initialize preferences and preview
+    let isDraggingVertical = false;
+    verticalResizer.addEventListener("pointerdown", (e) => {
+      isDraggingVertical = true;
+      verticalResizer.setPointerCapture(e.pointerId);
+      document.body.style.cursor = 'row-resize';
+    });
+    verticalResizer.addEventListener("pointermove", (e) => {
+      if (!isDraggingVertical) return;
+      resizeVerticalPanels(e);
+    });
+    verticalResizer.addEventListener("pointerup", (e) => {
+      isDraggingVertical = false;
+      document.body.style.cursor = 'default';
+      verticalResizer.releasePointerCapture(e.pointerId);
+    });
+    function resizeVerticalPanels(e) {
+      const panelRect = rightPanel.getBoundingClientRect();
+      const offsetY = e.clientY - panelRect.top;
+      const minHeight = 50;
+      const maxHeight = panelRect.height - minHeight - 5;
+      const newPreviewHeight = Math.max(minHeight, Math.min(offsetY, maxHeight));
+      const consoleHeight = panelRect.height - newPreviewHeight - 5;
+      rightPanel.style.gridTemplateRows = `${newPreviewHeight}px 5px ${consoleHeight}px`;
+    }
+
+    setupConsoleCapture();
     loadSavedPreferences();
     updatePreview();
   </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9261806d0afebd2b',t:'MTc0MjkzODE0NC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
 </body>
 </html>
