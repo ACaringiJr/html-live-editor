@@ -102,6 +102,17 @@
             font-size: 12px;
             margin-left: 10px;
         }
+
+        .CodeMirror .highlight-occurrence {
+            background-color: #808080;
+            opacity: 1;
+        }
+        .CodeMirror .CodeMirror-matchingbracket {
+            background-color: #808080;
+            color: #ff0000;
+            font-weight: bold;
+            outline: 1px solid #bbbbbb;
+        }
     </style>
 </head>
 <body>
@@ -112,16 +123,23 @@
 <html>
   <head>
     <title>My Page</title>
+    <script>
+      function test() {
+        console.log("Hello");
+      }
+    </script>
   </head>
   <body>
     <h1>Hello World!</h1>
   </body>
-</html></textarea>
+</html>
+            </textarea>
             <div class="buttons">
                 <div>
                     <button onclick="updatePreview()">Update Preview</button>
                     <button onclick="popOutCode()">Pop Out Code</button>
                     <button onclick="exportHTML()">Export HTML</button>
+                    <button onclick="findAndReplace()">Find/Replace</button>
                     <span id="saveStatus" class="save-status"></span>
                 </div>
                 <div class="mode-toggle">
@@ -147,8 +165,11 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/closetag.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/fold/xml-fold.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/closebrackets.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/closetag.min.js"></script>
-
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/search/search.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/search/searchcursor.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/search/jump-to-line.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/selection/active-line.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/matchbrackets.min.js"></script>
 
     <script>
         const container = document.querySelector('.container');
@@ -159,14 +180,20 @@
         const autocompleteToggle = document.getElementById('autocompleteToggle');
         const saveStatus = document.getElementById('saveStatus');
 
-        // Initialize CodeMirror
+        // Initialize CodeMirror with enhanced features
         const editor = CodeMirror.fromTextArea(document.getElementById('codeInput'), {
             mode: 'htmlmixed',
             theme: 'default',
             lineNumbers: true,
             autoCloseTags: true,
-            autoCloseBrackets: true, // Automatically close brackets
+            autoCloseBrackets: true,
             lineWrapping: true,
+            matchBrackets: {
+                highlight: true,
+                showCursorWhenSelecting: true,
+                maxScanLines: 1000
+            },
+            styleActiveLine: true,
             hintOptions: {
                 completeSingle: false
             },
@@ -180,7 +207,9 @@
                     }
                 },
                 "Ctrl-Space": "autocomplete",
-                "Ctrl-F": "findPersistent"
+                "Ctrl-F": "findPersistent",
+                "Ctrl-H": "replace",
+                "Ctrl-R": "replaceAll"
             }
         });
 
@@ -192,6 +221,31 @@
                     completeSingle: false
                 });
             }
+        });
+
+        // Highlight all occurrences of selected text
+        editor.on('cursorActivity', function(cm) {
+            // Clear only occurrence highlights, not bracket matches
+            cm.getAllMarks().forEach(marker => {
+                if (marker.className === 'highlight-occurrence') {
+                    marker.clear();
+                }
+            });
+            
+            const selection = cm.getSelection();
+            if (selection) {
+                const cursor = cm.getSearchCursor(selection);
+                while (cursor.findNext()) {
+                    cm.markText(cursor.from(), cursor.to(), {
+                        className: 'highlight-occurrence'
+                    });
+                }
+            }
+        });
+
+        // Refresh editor on focus to ensure bracket matching updates
+        editor.on('focus', function(cm) {
+            cm.refresh();
         });
 
         // Toggle autocomplete and save preference
@@ -281,6 +335,42 @@
             a.click();
             document.body.removeChild(a);
             setTimeout(() => URL.revokeObjectURL(url), 1000);
+        }
+
+        // Find and Replace function
+        function findAndReplace() {
+            const findText = prompt('Find what:');
+            if (!findText) return;
+
+            const replaceText = prompt('Replace with:') || '';
+            const replaceAll = confirm('Replace all occurrences?');
+
+            if (replaceAll) {
+                let count = 0;
+                const cursor = editor.getSearchCursor(findText);
+                editor.operation(() => {
+                    while (cursor.findNext()) {
+                        cursor.replace(replaceText);
+                        count++;
+                    }
+                });
+                saveStatus.textContent = `Replaced ${count} occurrences`;
+                setTimeout(() => saveStatus.textContent = '', 2000);
+            } else {
+                const cursor = editor.getSearchCursor(findText);
+                if (cursor.findNext()) {
+                    editor.setSelection(cursor.from(), cursor.to());
+                    if (confirm('Replace this occurrence?')) {
+                        cursor.replace(replaceText);
+                        saveStatus.textContent = 'Replaced 1 occurrence';
+                        setTimeout(() => saveStatus.textContent = '', 2000);
+                    }
+                } else {
+                    alert('Text not found');
+                }
+            }
+            updatePreview();
+            autoSave();
         }
 
         // Autosave functionality
