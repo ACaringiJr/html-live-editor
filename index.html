@@ -305,39 +305,129 @@
     const findReplaceHandle = findReplaceModal.querySelector('.draggable-handle');
     const verticalResizer = document.getElementById('verticalResizer');
 
+    // Find the editor initialization code in the script
     const editor = CodeMirror.fromTextArea(document.getElementById('codeInput'), {
-      mode: 'htmlmixed',
-      theme: 'default',
-      lineNumbers: true,
-      autoCloseTags: true,
-      autoCloseBrackets: true,
-      lineWrapping: true,
-      matchBrackets: { highlight: true, showCursorWhenSelecting: true, maxScanLines: 1000 },
-      styleActiveLine: true,
-      hintOptions: { completeSingle: false },
-      extraKeys: {
-        "Alt-ScrollLock": "toggleWordWrap",
-        "Tab": function(cm) {
-          if (cm.somethingSelected()) {
-            cm.indentSelection(2);
-          } else {
-            cm.replaceSelection("  ");
-          }
-        },
-        "Ctrl-Space": "autocomplete",
-        "Ctrl-F": toggleFindReplace,
-        "Ctrl-H": toggleFindReplace,
-        "Ctrl-R": toggleFindReplace,
-        "Ctrl-S": function(e) {
-          e.preventDefault();
-          autoSave();
-        },
-        "Ctrl-P": function(e) {
-          e.preventDefault();
-          updatePreview();
+        mode: 'htmlmixed',
+        theme: 'default',
+        lineNumbers: true,
+        // Explicitly disable autoCloseTags
+        autoCloseTags: false,
+        autoCloseBrackets: true,
+        lineWrapping: true,
+        matchBrackets: { highlight: true, showCursorWhenSelecting: true, maxScanLines: 1000 },
+        styleActiveLine: true,
+        hintOptions: { completeSingle: false },
+        indentUnit: 2,
+        smartIndent: true,
+        extraKeys: {
+            "Alt-ScrollLock": "toggleWordWrap",
+            "Tab": function(cm) {
+            if (cm.somethingSelected()) {
+                cm.indentSelection(2);
+            } else {
+                cm.replaceSelection("  ");
+            }
+            },
+            "Ctrl-Space": "autocomplete",
+            "Ctrl-F": toggleFindReplace,
+            "Ctrl-H": toggleFindReplace,
+            "Ctrl-R": toggleFindReplace,
+            "Ctrl-S": function(e) {
+            e.preventDefault();
+            autoSave();
+            },
+            "Ctrl-P": function(e) {
+            e.preventDefault();
+            updatePreview();
+            },
+            // Add enter key handler
+            "Enter": function(cm) {
+            const cursor = cm.getCursor();
+            const line = cm.getLine(cursor.line);
+            const beforeCursor = line.slice(0, cursor.ch);
+            const afterCursor = line.slice(cursor.ch);
+            
+            // Check if cursor is between opening and closing tags
+            const openTagBefore = beforeCursor.match(/<([a-zA-Z][a-zA-Z0-9]*)[^<>]*>$/);
+            const closeTagAfter = afterCursor.match(/^<\/([a-zA-Z][a-zA-Z0-9]*)>/);
+            
+            if (openTagBefore && closeTagAfter && openTagBefore[1] === closeTagAfter[1]) {
+                // We're between matching tags, add a new line with proper indentation
+                const currentIndent = line.match(/^\s*/)[0];
+                const indentUnit = editor.getOption('indentUnit') || 2;
+                const innerIndent = currentIndent + ' '.repeat(indentUnit);
+                
+                // Replace the content between tags with properly indented newlines
+                cm.replaceRange('\n' + innerIndent + '\n' + currentIndent, cursor);
+                
+                // Position cursor at the indented line
+                cm.setCursor({ line: cursor.line + 1, ch: innerIndent.length });
+            } else {
+                // Normal enter behavior with auto indent
+                const currentIndent = line.match(/^\s*/)[0];
+                const openTag = line.match(/<[^/][^>]*>[^<]*$/);
+                
+                if (openTag) {
+                // Increase indent after opening tag
+                cm.replaceSelection('\n' + currentIndent + ' '.repeat(editor.getOption('indentUnit')));
+                } else {
+                cm.replaceSelection('\n' + currentIndent);
+                }
+            }
+            }
         }
-      }
     });
+
+    editor.on('keyup', (cm, event) => {
+        // Show hints for autocomplete if enabled
+        if (autocompleteToggle.checked) {
+            const triggers = /[a-zA-Z<>="'\s]/;
+            if (triggers.test(String.fromCharCode(event.keyCode))) {
+            cm.showHint({ completeSingle: false });
+            }
+        }
+        
+        // Auto-close tags without newlines
+        if (event.key === '>') {
+            const cursor = cm.getCursor();
+            const line = cm.getLine(cursor.line);
+            const beforeCursor = line.slice(0, cursor.ch);
+            const afterCursor = line.slice(cursor.ch);
+            
+            // Check if we just typed a tag opening
+            const match = beforeCursor.match(/<([a-zA-Z][a-zA-Z0-9]*)[^<>]*>$/);
+            
+            // Only proceed if we found an opening tag
+            if (match) {
+            const tagName = match[1];
+            // Skip self-closing tags
+            const selfClosing = ['img', 'input', 'br', 'hr', 'link', 'meta'];
+            if (!selfClosing.includes(tagName) && !beforeCursor.endsWith('/>')) {
+                // Check if there's already a closing tag right after the cursor
+                if (afterCursor.match(new RegExp(`^</${tagName}>`))) {
+                return; // Already has closing tag, do nothing
+                }
+                
+                // Check the rest of the document for a matching closing tag
+                const doc = cm.getValue();
+                const cursorPos = cm.indexFromPos(cursor);
+                const remainingText = doc.slice(cursorPos);
+                
+                // Only add closing tag if one doesn't exist in the remaining document
+                const hasClosingTag = new RegExp(`</${tagName}>`).test(remainingText);
+                if (!hasClosingTag) {
+                // Add closing tag without newlines and position cursor inside tags
+                cm.replaceRange(`</${tagName}>`, cursor);
+                // Keep cursor in the same position
+                cm.setCursor({
+                    line: cursor.line,
+                    ch: cursor.ch
+                });
+                }
+            }
+            }
+        }
+        });
 
     function setupConsoleCapture() {
       const consoleOutput = document.getElementById('consoleOutput');
