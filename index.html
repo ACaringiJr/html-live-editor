@@ -1,9 +1,7 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
+
   <meta charset="UTF-8">
   <title>HTML Playground | Live Code Editor</title>
-  <link rel="icon" type="image/x-icon" href="https://img.icons8.com/?size=256&id=20909&format=png">
+  <link rel="icon" type="image/x-icon" href="https://img.icons8.com/?size=256&amp;id=20909&amp;format=png">
 
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/dracula.min.css">
@@ -15,21 +13,21 @@
       --editor-bg-secondary: #f0f0f0;
       --editor-text-primary: #000000;
       --editor-border-color: #cccccc;
-      /* Highlight colors for light mode */
-      --highlight-bg: #d3d3d3; /* Light gray for occurrences */
+
+      --highlight-bg: #d3d3d3; 
       --match-bracket-outline: #44475a;
-      --match-bracket-color: #ff0000; /* Red for bracket text */
+      --match-bracket-color: #ff0000; 
     }
-    /* Dark mode styling applied to the editor only */
+
     .editor-wrapper.dark-mode {
       --editor-bg-primary: #282a36;
       --editor-bg-secondary: #44475a;
       --editor-text-primary: #f8f8f2;
       --editor-border-color: #6272a4;
-      /* Highlight colors for dark mode */
-      --highlight-bg: #6272a4; /* Muted blue for occurrences */
-      --match-bracket-outline: #ffffff; /* White outline */
-      --match-bracket-color: #ff5555; /* Light red for bracket text */
+
+      --highlight-bg: #6272a4; 
+      --match-bracket-outline: #ffffff; 
+      --match-bracket-color: #ff5555; 
     }
     html, body {
       height: 100%;
@@ -211,25 +209,23 @@
       color: var(--editor-text-primary);
     }
   </style>
-</head>
-<body>
+
   <div class="container">
     <div class="editor-wrapper" id="editorWrapper">
-      <textarea id="codeInput">
-<!DOCTYPE html>
-<html>
-  <head>
-    <title>My Page</title>
-    <script>
+      <textarea id="codeInput">&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+  &lt;head&gt;
+    &lt;title&gt;My Page&lt;/title&gt;
+    &lt;script&gt;
       function test() {
         console.log("Hello");
       }
-    </script>
-  </head>
-  <body>
-    <h1>Hello World!</h1>
-  </body>
-</html>
+    &lt;/script&gt;
+  &lt;/head&gt;
+  &lt;body&gt;
+    &lt;h1&gt;Hello World!&lt;/h1&gt;
+  &lt;/body&gt;
+&lt;/html&gt;
       </textarea>
       <div class="buttons">
         <div>
@@ -249,8 +245,8 @@
         </div>
       </div>
       <div id="findReplaceModal">
-        <div class="draggable-handle">⠶ Find & Replace</div>
-        <button class="close-btn" onclick="toggleFindReplace()">&times;</button>
+        <div class="draggable-handle">⠶ Find &amp; Replace</div>
+        <button class="close-btn" onclick="toggleFindReplace()">×</button>
         <input type="text" id="findText" placeholder="Find">
         <input type="text" id="replaceText" placeholder="Replace with">
         <div class="modal-buttons">
@@ -305,12 +301,11 @@
     const findReplaceHandle = findReplaceModal.querySelector('.draggable-handle');
     const verticalResizer = document.getElementById('verticalResizer');
 
-    // Find the editor initialization code in the script
     const editor = CodeMirror.fromTextArea(document.getElementById('codeInput'), {
         mode: 'htmlmixed',
         theme: 'default',
         lineNumbers: true,
-        // Explicitly disable autoCloseTags
+
         autoCloseTags: false,
         autoCloseBrackets: true,
         lineWrapping: true,
@@ -340,35 +335,32 @@
             e.preventDefault();
             updatePreview();
             },
-            // Add enter key handler
+
             "Enter": function(cm) {
             const cursor = cm.getCursor();
             const line = cm.getLine(cursor.line);
             const beforeCursor = line.slice(0, cursor.ch);
             const afterCursor = line.slice(cursor.ch);
-            
-            // Check if cursor is between opening and closing tags
+
             const openTagBefore = beforeCursor.match(/<([a-zA-Z][a-zA-Z0-9]*)[^<>]*>$/);
             const closeTagAfter = afterCursor.match(/^<\/([a-zA-Z][a-zA-Z0-9]*)>/);
-            
+
             if (openTagBefore && closeTagAfter && openTagBefore[1] === closeTagAfter[1]) {
-                // We're between matching tags, add a new line with proper indentation
+
                 const currentIndent = line.match(/^\s*/)[0];
                 const indentUnit = editor.getOption('indentUnit') || 2;
                 const innerIndent = currentIndent + ' '.repeat(indentUnit);
-                
-                // Replace the content between tags with properly indented newlines
+
                 cm.replaceRange('\n' + innerIndent + '\n' + currentIndent, cursor);
-                
-                // Position cursor at the indented line
+
                 cm.setCursor({ line: cursor.line + 1, ch: innerIndent.length });
             } else {
-                // Normal enter behavior with auto indent
+
                 const currentIndent = line.match(/^\s*/)[0];
                 const openTag = line.match(/<[^/][^>]*>[^<]*$/);
-                
+
                 if (openTag) {
-                // Increase indent after opening tag
+
                 cm.replaceSelection('\n' + currentIndent + ' '.repeat(editor.getOption('indentUnit')));
                 } else {
                 cm.replaceSelection('\n' + currentIndent);
@@ -379,46 +371,41 @@
     });
 
     editor.on('keyup', (cm, event) => {
-        // Show hints for autocomplete if enabled
+
         if (autocompleteToggle.checked) {
             const triggers = /[a-zA-Z<>="'\s]/;
             if (triggers.test(String.fromCharCode(event.keyCode))) {
             cm.showHint({ completeSingle: false });
             }
         }
-        
-        // Auto-close tags without newlines
+
         if (event.key === '>') {
             const cursor = cm.getCursor();
             const line = cm.getLine(cursor.line);
             const beforeCursor = line.slice(0, cursor.ch);
             const afterCursor = line.slice(cursor.ch);
-            
-            // Check if we just typed a tag opening
+
             const match = beforeCursor.match(/<([a-zA-Z][a-zA-Z0-9]*)[^<>]*>$/);
-            
-            // Only proceed if we found an opening tag
+
             if (match) {
             const tagName = match[1];
-            // Skip self-closing tags
+
             const selfClosing = ['img', 'input', 'br', 'hr', 'link', 'meta'];
             if (!selfClosing.includes(tagName) && !beforeCursor.endsWith('/>')) {
-                // Check if there's already a closing tag right after the cursor
+
                 if (afterCursor.match(new RegExp(`^</${tagName}>`))) {
-                return; // Already has closing tag, do nothing
+                return; 
                 }
-                
-                // Check the rest of the document for a matching closing tag
+
                 const doc = cm.getValue();
                 const cursorPos = cm.indexFromPos(cursor);
                 const remainingText = doc.slice(cursorPos);
-                
-                // Only add closing tag if one doesn't exist in the remaining document
+
                 const hasClosingTag = new RegExp(`</${tagName}>`).test(remainingText);
                 if (!hasClosingTag) {
-                // Add closing tag without newlines and position cursor inside tags
+
                 cm.replaceRange(`</${tagName}>`, cursor);
-                // Keep cursor in the same position
+
                 cm.setCursor({
                     line: cursor.line,
                     ch: cursor.ch
@@ -531,7 +518,7 @@
       preview.innerHTML = '';
       preview.appendChild(iframe);
       const doc = iframe.contentDocument || iframe.contentWindow.document;
-      
+
       iframe.contentWindow.console = {
         log: (...args) => {
           args.forEach(arg => {
@@ -654,7 +641,7 @@
       if (!findText) return;
       let cursor = editor.getSearchCursor(findText);
       let count = 0;
-      
+
       editor.operation(() => {
         if (replaceAll) {
           while (cursor.findNext()) {
@@ -775,5 +762,4 @@
     updatePreview();
   </script>
 <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9261806d0afebd2b',t:'MTc0MjkzODE0NC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
-</body>
-</html>
+
