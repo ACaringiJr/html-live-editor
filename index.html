@@ -1,514 +1,510 @@
+<meta charset="UTF-8">
+<title>HTML Playground | Live Code Editor</title>
+<link rel="icon" type="image/x-icon" href="https://img.icons8.com/?size=256&id=20909&format=png">
 
-  <meta charset="UTF-8">
-  <title>HTML Playground | Live Code Editor</title>
-  <link rel="icon" type="image/x-icon" href="https://img.icons8.com/?size=256&amp;id=20909&amp;format=png">
+<style>
+  :root {
+    --editor-bg-primary: #ffffff;
+    --editor-bg-secondary: #f0f0f0;
+    --editor-text-primary: #000000;
+    --editor-border-color: #cccccc;
+    --highlight-bg: #d3d3d3;
+    --match-bracket-outline: #44475a;
+    --match-bracket-color: #ff0000;
+  }
 
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/dracula.min.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/default.min.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/hint/show-hint.min.css">
-  <style>
-    :root {
-      --editor-bg-primary: #ffffff;
-      --editor-bg-secondary: #f0f0f0;
-      --editor-text-primary: #000000;
-      --editor-border-color: #cccccc;
+  .editor-wrapper.dark-mode {
+    --editor-bg-primary: #272822;
+    --editor-bg-secondary: #3a3d4b;
+    --editor-text-primary: #f8f8f2;
+    --editor-border-color: #6272a4;
+    --highlight-bg: #6272a4;
+    --match-bracket-outline: #ffffff;
+    --match-bracket-color: #ff5555;
+  }
 
-      --highlight-bg: #d3d3d3; 
-      --match-bracket-outline: #44475a;
-      --match-bracket-color: #ff0000; 
-    }
+  html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    font-family: Arial, sans-serif;
+  }
 
-    .editor-wrapper.dark-mode {
-      --editor-bg-primary: #282a36;
-      --editor-bg-secondary: #44475a;
-      --editor-text-primary: #f8f8f2;
-      --editor-border-color: #6272a4;
+  .container {
+    display: grid;
+    grid-template-columns: 1fr 5px 1fr;
+    grid-template-rows: 100%;
+    height: 100vh;
+  }
 
-      --highlight-bg: #6272a4; 
-      --match-bracket-outline: #ffffff; 
-      --match-bracket-color: #ff5555; 
-    }
-    html, body {
-      height: 100%;
-      margin: 0;
-      padding: 0;
-      overflow: hidden;
-      font-family: Arial, sans-serif;
-    }
-    .container {
-      display: grid;
-      grid-template-columns: 1fr 5px 1fr;
-      grid-template-rows: 100%;
-      height: 100vh;
-    }
-    .editor-wrapper {
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-      background-color: var(--editor-bg-primary);
-      position: relative;
-    }
-    .CodeMirror {
-      flex-grow: 1;
-      height: auto !important;
-      background-color: var(--editor-bg-primary) !important;
-      color: var(--editor-text-primary) !important;
-    }
-    .resizer {
-      background: #ccc;
-      cursor: col-resize;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 10;
-      position: relative;
-    }
-    .resizer::after {
-      content: '⋮';
-      color: #666;
-      font-size: 20px;
-    }
-    .resizer:hover {
-      background: #999;
-    }
-    #rightPanel {
-      display: grid;
-      grid-template-rows: 1fr;
-      height: 100%;
-    }
-    #preview {
-      overflow: auto;
-      background: var(--editor-bg-secondary);
-    }
-    .vertical-resizer {
-      background: #ccc;
-      cursor: row-resize;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 10;
-      display: none;
-    }
-    .vertical-resizer::after {
-      content: '─';
-      color: #666;
-      font-size: 20px;
-    }
-    .vertical-resizer:hover {
-      background: #999;
-    }
-    #consoleSection {
-      background: #1a1a1a;
-      color: #ffffff;
-      font-family: monospace;
-      padding: 10px;
-      overflow-y: auto;
-      display: none;
-    }
-    .console-log {
-      margin: 2px 0;
-      word-wrap: break-word;
-    }
-    .console-log.log { color: #ffffff; }
-    .console-log.error { color: #ff6b6b; }
-    .console-log.warn { color: #feca57; }
-    .buttons {
-      padding: 10px;
-      background: var(--editor-bg-secondary);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    .buttons button {
-      margin: 0 5px;
-      cursor: pointer;
-      background: #e0e0e0;
-      border: 1px solid var(--editor-border-color);
-      padding: 5px 10px;
-    }
-    .editor-wrapper.dark-mode .buttons {
-      background: var(--editor-bg-secondary);
-    }
-    .editor-wrapper.dark-mode .buttons button {
-      background: #44475a;
-      color: #f8f8f2;
-      border: 1px solid var(--editor-border-color);
-    }
-    .mode-toggle {
-      display: flex;
-      align-items: center;
-    }
-    .mode-toggle label {
-      margin-right: 10px;
-      margin-left: 20px;
-    }
-    .save-status {
-      color: #4CAF50;
-      font-size: 12px;
-      margin-left: 10px;
-    }
-    .CodeMirror .highlight-occurrence {
-      background-color: var(--highlight-bg);
-      opacity: 1;
-    }
-    .CodeMirror .CodeMirror-matchingbracket {
-      background-color: var(--match-bracket-bg);
-      color: var(--match-bracket-color);
-      font-weight: bold;
-      outline: 1px solid var(--match-bracket-outline);
-    }
-    #findReplaceModal {
-      position: absolute;
-      top: 10px;
-      right: 10px;
-      width: 300px;
-      background-color: var(--editor-bg-primary);
-      border: 1px solid var(--editor-border-color);
-      padding: 15px;
-      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-      z-index: 100;
-      display: none;
-      border-radius: 5px;
-    }
-    #findReplaceModal input {
-      width: 100%;
-      margin: 5px 0;
-      padding: 5px;
-      border: 1px solid var(--editor-border-color);
-      background: var(--editor-bg-secondary);
-      color: var(--editor-text-primary);
-      box-sizing: border-box;
-    }
-    #findReplaceModal .modal-buttons {
-      display: flex;
-      justify-content: space-between;
-      margin-top: 10px;
-    }
-    #findReplaceModal button {
-      padding: 5px 10px;
-      cursor: pointer;
-      background: #e0e0e0;
-      border: 1px solid var(--editor-border-color);
-    }
-    #findReplaceModal .close-btn {
-      position: absolute;
-      top: 5px;
-      right: 5px;
-      background: none;
-      border: none;
-      font-size: 18px;
-      cursor: pointer;
-    }
-    .draggable-handle {
-      cursor: move;
-      background: var(--editor-bg-secondary);
-      padding: 5px;
-      text-align: center;
-      font-size: 12px;
-      color: var(--editor-text-primary);
-    }
-  </style>
+  .editor-wrapper {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background-color: var(--editor-bg-primary);
+    position: relative;
+  }
 
-  <div class="container">
-    <div class="editor-wrapper" id="editorWrapper">
-      <textarea id="codeInput">&lt;!DOCTYPE html&gt;
-&lt;html&gt;
-  &lt;head&gt;
-    &lt;title&gt;My Page&lt;/title&gt;
-    &lt;script&gt;
-      function test() {
-        console.log("Hello");
-      }
-    &lt;/script&gt;
-  &lt;/head&gt;
-  &lt;body&gt;
-    &lt;h1&gt;Hello World!&lt;/h1&gt;
-  &lt;/body&gt;
-&lt;/html&gt;
-      </textarea>
-      <div class="buttons">
-        <div>
-          <button onclick="updatePreview()">Update Preview</button>
-          <button onclick="popOutCode()">Pop Out Code</button>
-          <button onclick="exportHTML()">Export HTML</button>
-          <button onclick="document.getElementById('fileInput').click()">Import HTML</button>
-          <button onclick="toggleFindReplace()">Find/Replace</button>
-          <button onclick="toggleConsole()">Toggle Console</button>
-          <span id="saveStatus" class="save-status"></span>
-        </div>
-        <div class="mode-toggle">
-          <label for="darkModeToggle">Dark Mode</label>
-          <input type="checkbox" id="darkModeToggle" onchange="toggleDarkMode()">
-          <label for="autocompleteToggle">Autocomplete</label>
-          <input type="checkbox" id="autocompleteToggle" onchange="toggleAutocomplete()">
-        </div>
+  #editor {
+    flex-grow: 1;
+    width: 100%;
+    background-color: var(--editor-bg-primary);
+    color: var(--editor-text-primary);
+  }
+
+  .ace_editor {
+    border: 1px solid var(--editor-border-color);
+  }
+
+  .resizer {
+    background: #ccc;
+    cursor: col-resize;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+    position: relative;
+  }
+
+  .resizer::after {
+    content: '⋮';
+    color: #666;
+    font-size: 20px;
+  }
+
+  .resizer:hover {
+    background: #999;
+  }
+
+  #rightPanel {
+    display: grid;
+    grid-template-rows: 1fr;
+    height: 100%;
+  }
+
+  #preview {
+    overflow: auto;
+    background: var(--editor-bg-secondary);
+    position: relative;
+  }
+
+  .preview-loading {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: rgba(0,0,0,0.7);
+    color: #fff;
+    padding: 5px 10px;
+    border-radius: 3px;
+    display: none;
+  }
+
+  .vertical-resizer {
+    background: #ccc;
+    cursor: row-resize;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+    display: none;
+  }
+
+  .vertical-resizer::after {
+    content: '─';
+    color: #666;
+    font-size: 20px;
+  }
+
+  .vertical-resizer:hover {
+    background: #999;
+  }
+
+  #consoleSection {
+    background: #1a1a1a;
+    color: #ffffff;
+    font-family: monospace;
+    padding: 10px;
+    overflow-y: auto;
+    display: none;
+  }
+
+  .console-log {
+    margin: 2px 0;
+    word-wrap: break-word;
+  }
+
+  .console-log.log { color: #ffffff; }
+  .console-log.error { color: #ff6b6b; }
+  .console-log.warn { color: #feca57; }
+
+  .buttons {
+    padding: 10px;
+    background: var(--editor-bg-secondary);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .buttons button {
+    margin: 0 5px;
+    cursor: pointer;
+    background: #e0e0e0;
+    border: 1px solid var(--editor-border-color);
+    padding: 5px 10px;
+    border-radius: 3px;
+    transition: background 0.2s;
+  }
+
+  .buttons button:hover {
+    background: #d0d0d0;
+  }
+
+  .editor-wrapper.dark-mode .buttons {
+    background: var(--editor-bg-secondary);
+  }
+
+  .editor-wrapper.dark-mode .buttons button {
+    background: #44475a;
+    color: #f8f8f2;
+    border: 1px solid var(--editor-border-color);
+  }
+
+  .editor-wrapper.dark-mode .buttons button:hover {
+    background: #55576a;
+  }
+
+  .mode-toggle {
+    display: flex;
+    align-items: center;
+  }
+
+  .mode-toggle label {
+    margin-right: 10px;
+    margin-left: 20px;
+  }
+
+  .save-status {
+    color: #4CAF50;
+    font-size: 12px;
+    margin-left: 10px;
+  }
+
+  .ace_highlight-occurrence {
+    background-color: var(--highlight-bg);
+    position: absolute;
+    z-index: 20;
+  }
+
+  #findReplaceModal {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 300px;
+    background-color: var(--editor-bg-primary);
+    border: 1px solid var(--editor-border-color);
+    padding: 15px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    z-index: 100;
+    display: none;
+    border-radius: 5px;
+  }
+
+  #findReplaceModal input {
+    width: 100%;
+    margin: 5px 0;
+    padding: 5px;
+    border: 1px solid var(--editor-border-color);
+    background: var(--editor-bg-secondary);
+    color: var(--editor-text-primary);
+    box-sizing: border-box;
+    border-radius: 3px;
+  }
+
+  #findReplaceModal .modal-buttons {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 10px;
+  }
+
+  #findReplaceModal button {
+    padding: 5px 10px;
+    cursor: pointer;
+    background: #e0e0e0;
+    border: 1px solid var(--editor-border-color);
+    border-radius: 3px;
+  }
+
+  #findReplaceModal button:hover {
+    background: #d0d0d0;
+  }
+
+  #findReplaceModal .close-btn {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    background: none;
+    border: none;
+    font-size: 18px;
+    cursor: pointer;
+  }
+
+  .draggable-handle {
+    cursor: move;
+    background: var(--editor-bg-secondary);
+    padding: 5px;
+    text-align: center;
+    font-size: 12px;
+    color: var(--editor-text-primary);
+    border-radius: 3px 3px 0 0;
+  }
+</style>
+
+<div class="container">
+  <div class="editor-wrapper" id="editorWrapper">
+    <div id="editor"><!DOCTYPE html>
+<html>
+<head>
+  <title>My Page</title>
+  <script>
+    function test() {
+      console.log("Hello");
+    }
+  </script>
+</head>
+<body>
+  <h1>Hello World!</h1>
+</body>
+</html>
+    </div>
+    <div class="buttons">
+      <div>
+        <button onclick="updatePreview()">Update Preview</button>
+        <button onclick="popOutCode()">Pop Out Code</button>
+        <button onclick="exportHTML()">Export HTML</button>
+        <button onclick="document.getElementById('fileInput').click()">Import HTML</button>
+        <button onclick="toggleFindReplace()">Find/Replace</button>
+        <button onclick="toggleConsole()">Toggle Console</button>
+        <button onclick="clearConsole()">Clear Console</button>
+        <span id="saveStatus" class="save-status"></span>
       </div>
-      <div id="findReplaceModal">
-        <div class="draggable-handle">⠶ Find &amp; Replace</div>
-        <button class="close-btn" onclick="toggleFindReplace()">×</button>
-        <input type="text" id="findText" placeholder="Find">
-        <input type="text" id="replaceText" placeholder="Replace with">
-        <div class="modal-buttons">
-          <button onclick="executeFind()">Find</button>
-          <button onclick="executeFindReplace(true)">Replace All</button>
-          <button onclick="executeFindReplace(false)">Replace</button>
-        </div>
+      <div class="mode-toggle">
+        <label for="darkModeToggle">Dark Mode</label>
+        <input type="checkbox" id="darkModeToggle" onchange="toggleDarkMode()">
+        <label for="autocompleteToggle">Autocomplete</label>
+        <input type="checkbox" id="autocompleteToggle" onchange="toggleAutocomplete()">
       </div>
     </div>
-    <div class="resizer"></div>
-    <div id="rightPanel">
-      <div id="preview"></div>
-      <div class="vertical-resizer" id="verticalResizer"></div>
-      <div id="consoleSection">
-        <div id="consoleOutput"></div>
+    <div id="findReplaceModal">
+      <div class="draggable-handle">⠶ Find & Replace</div>
+      <button class="close-btn" onclick="toggleFindReplace()">×</button>
+      <input type="text" id="findText" placeholder="Find">
+      <input type="text" id="replaceText" placeholder="Replace with">
+      <div class="modal-buttons">
+        <button onclick="executeFind()">Find</button>
+        <button onclick="executeFindReplace(true)">Replace All</button>
+        <button onclick="executeFindReplace(false)">Replace</button>
       </div>
     </div>
   </div>
+  <div class="resizer"></div>
+  <div id="rightPanel">
+    <div id="preview">
+      <div id="previewLoading" class="preview-loading">Loading...</div>
+    </div>
+    <div class="vertical-resizer" id="verticalResizer"></div>
+    <div id="consoleSection">
+      <div id="consoleOutput"></div>
+    </div>
+  </div>
+</div>
 
-  <input type="file" id="fileInput" accept=".html" style="display: none;">
+<input type="file" id="fileInput" accept=".html" style="display: none;">
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/htmlmixed/htmlmixed.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/xml/xml.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/javascript/javascript.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/css/css.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/hint/show-hint.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/hint/xml-hint.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/hint/html-hint.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/closetag.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/fold/xml-fold.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/closebrackets.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/search/search.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/search/searchcursor.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/search/jump-to-line.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/selection/active-line.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/matchbrackets.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.36.2/ace.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.36.2/ext-language_tools.min.js"></script>
 
-  <script>
-    const container = document.querySelector('.container');
-    const resizer = document.querySelector('.resizer');
-    const editorWrapper = document.getElementById('editorWrapper');
-    const preview = document.getElementById('preview');
-    const rightPanel = document.getElementById('rightPanel');
-    const darkModeToggle = document.getElementById('darkModeToggle');
-    const autocompleteToggle = document.getElementById('autocompleteToggle');
-    const saveStatus = document.getElementById('saveStatus');
-    const fileInput = document.getElementById('fileInput');
-    const findReplaceModal = document.getElementById('findReplaceModal');
-    const findTextInput = document.getElementById('findText');
-    const replaceTextInput = document.getElementById('replaceText');
-    const findReplaceHandle = findReplaceModal.querySelector('.draggable-handle');
-    const verticalResizer = document.getElementById('verticalResizer');
+<script>
+  const container = document.querySelector('.container');
+  const resizer = document.querySelector('.resizer');
+  const editorWrapper = document.getElementById('editorWrapper');
+  const preview = document.getElementById('preview');
+  const previewLoading = document.getElementById('previewLoading');
+  const rightPanel = document.getElementById('rightPanel');
+  const darkModeToggle = document.getElementById('darkModeToggle');
+  const autocompleteToggle = document.getElementById('autocompleteToggle');
+  const saveStatus = document.getElementById('saveStatus');
+  const fileInput = document.getElementById('fileInput');
+  const findReplaceModal = document.getElementById('findReplaceModal');
+  const findTextInput = document.getElementById('findText');
+  const replaceTextInput = document.getElementById('replaceText');
+  const findReplaceHandle = findReplaceModal.querySelector('.draggable-handle');
+  const verticalResizer = document.getElementById('verticalResizer');
 
-    const editor = CodeMirror.fromTextArea(document.getElementById('codeInput'), {
-        mode: 'htmlmixed',
-        theme: 'default',
-        lineNumbers: true,
+  // Initialize Ace editor
+  ace.require("ace/ext/language_tools");
+  const editor = ace.edit("editor", {
+      mode: "ace/mode/html",
+      theme: "ace/theme/textmate",
+      showPrintMargin: false,
+      wrap: true,
+      showLineNumbers: true,
+      enableBasicAutocompletion: true,
+      enableLiveAutocompletion: false, // Controlled manually
+      enableSnippets: false,
+      tabSize: 2,
+      useSoftTabs: true,
+      highlightActiveLine: true,
+      fontSize: 14,
+      autoIndent: false // Disable default auto-indent
+  });
 
-        autoCloseTags: false,
-        autoCloseBrackets: true,
-        lineWrapping: true,
-        matchBrackets: { highlight: true, showCursorWhenSelecting: true, maxScanLines: 1000 },
-        styleActiveLine: true,
-        hintOptions: { completeSingle: false },
-        indentUnit: 2,
-        smartIndent: true,
-        extraKeys: {
-            "Alt-ScrollLock": "toggleWordWrap",
-            "Tab": function(cm) {
-            if (cm.somethingSelected()) {
-                cm.indentSelection(2);
-            } else {
-                cm.replaceSelection("  ");
-            }
-            },
-            "Ctrl-Space": "autocomplete",
-            "Ctrl-F": toggleFindReplace,
-            "Ctrl-H": toggleFindReplace,
-            "Ctrl-R": toggleFindReplace,
-            "Ctrl-S": function(e) {
-            e.preventDefault();
-            autoSave();
-            },
-            "Ctrl-P": function(e) {
-            e.preventDefault();
-            updatePreview();
-            },
+  // Configure autocomplete
+  editor.commands.addCommand({
+      name: 'showAutocomplete',
+      bindKey: { win: 'Ctrl-Space', mac: 'Ctrl-Space' },
+      exec: function(editor) {
+          editor.completer.showPopup(editor);
+      }
+  });
 
-            "Enter": function(cm) {
-            const cursor = cm.getCursor();
-            const line = cm.getLine(cursor.line);
-            const beforeCursor = line.slice(0, cursor.ch);
-            const afterCursor = line.slice(cursor.ch);
+  let autocompleteTimeout;
+  editor.on('input', function(e) {
+      if (!autocompleteToggle.checked) return;
+      const session = editor.getSession();
+      const cursor = editor.getCursorPosition();
+      const line = session.getLine(cursor.row);
+      const prefix = line.slice(0, cursor.column);
+      const token = session.getTokenAt(cursor.row, cursor.column);
+      const mode = session.getMode().$id.split('/').pop(); // html, css, javascript
 
-            const openTagBefore = beforeCursor.match(/<([a-zA-Z][a-zA-Z0-9]*)[^<>]*>$/);
-            const closeTagAfter = afterCursor.match(/^<\/([a-zA-Z][a-zA-Z0-9]*)>/);
+      // If last character is >, close autocomplete and skip
+      if (prefix.endsWith('>')) {
+          if (editor.completer && editor.completer.popup) {
+              editor.completer.detach();
+          }
+          return;
+      }
 
-            if (openTagBefore && closeTagAfter && openTagBefore[1] === closeTagAfter[1]) {
+      // Skip if in a string, comment, or empty token
+      if (token && (token.type.includes('string') || token.type.includes('comment') || !token.value.trim())) {
+          return;
+      }
 
-                const currentIndent = line.match(/^\s*/)[0];
-                const indentUnit = editor.getOption('indentUnit') || 2;
-                const innerIndent = currentIndent + ' '.repeat(indentUnit);
+      // Context-specific trigger conditions
+      const triggers = {
+          html: () => {
+              return (prefix.match(/<([a-zA-Z][a-zA-Z0-9]*)\s*$/) || // Attributes
+                     prefix.match(/<([a-zA-Z][a-zA-Z0-9]*)\s+[a-zA-Z-]+=["']?$/) || // Attribute values
+                     prefix.match(/<$/)) && !prefix.match(/<[^>]*>$/); // Start of a tag, not after closing
+          },
+          css: () => {
+              return prefix.match(/{[^{}]*$/) || prefix.match(/:[^;]*$/); // Properties or values
+          },
+          javascript: () => {
+              return prefix.match(/\.$/) || prefix.match(/[a-zA-Z_][a-zA-Z0-9_]*$/); // Variables, properties, or keywords
+          }
+      };
 
-                cm.replaceRange('\n' + innerIndent + '\n' + currentIndent, cursor);
+      const shouldTrigger = triggers[mode]?.() && (token?.value.trim().length >= 2 || prefix.match(/[<:.]/));
+      if (!shouldTrigger) return;
 
-                cm.setCursor({ line: cursor.line + 1, ch: innerIndent.length });
-            } else {
+      clearTimeout(autocompleteTimeout);
+      autocompleteTimeout = setTimeout(() => {
+          editor.completer.showPopup(editor);
+      }, 250); // 250ms delay for responsiveness
+  });
 
-                const currentIndent = line.match(/^\s*/)[0];
-                const openTag = line.match(/<[^/][^>]*>[^<]*$/);
+  // Highlight selected text
+  let markers = [];
+  editor.on('changeSelection', () => {
+      const session = editor.getSession();
+      markers.forEach(marker => session.removeMarker(marker));
+      markers = [];
 
-                if (openTag) {
+      const selection = editor.getSelectedText();
+      if (selection) {
+          const ranges = [];
+          const lines = session.getDocument().getAllLines();
+          for (let row = 0; row < lines.length; row++) {
+              let col = 0;
+              while (col < lines[row].length) {
+                  const index = lines[row].indexOf(selection, col);
+                  if (index === -1) break;
+                  ranges.push({
+                      start: { row, column: index },
+                      end: { row, column: index + selection.length }
+                  });
+                  col = index + 1;
+              }
+          }
+          ranges.forEach(range => {
+              markers.push(session.addMarker(
+                  new ace.Range(range.start.row, range.start.column, range.end.row, range.end.column),
+                  'ace_highlight-occurrence',
+                  'text'
+              ));
+          });
+      }
+  });
 
-                cm.replaceSelection('\n' + currentIndent + ' '.repeat(editor.getOption('indentUnit')));
-                } else {
-                cm.replaceSelection('\n' + currentIndent);
-                }
-            }
-            }
-        }
-    });
-
-    editor.on('keyup', (cm, event) => {
-
-        if (autocompleteToggle.checked) {
-            const triggers = /[a-zA-Z<>="'\s]/;
-            if (triggers.test(String.fromCharCode(event.keyCode))) {
-            cm.showHint({ completeSingle: false });
-            }
-        }
-
-        if (event.key === '>') {
-            const cursor = cm.getCursor();
-            const line = cm.getLine(cursor.line);
-            const beforeCursor = line.slice(0, cursor.ch);
-            const afterCursor = line.slice(cursor.ch);
-
-            const match = beforeCursor.match(/<([a-zA-Z][a-zA-Z0-9]*)[^<>]*>$/);
-
-            if (match) {
-            const tagName = match[1];
-
-            const selfClosing = ['img', 'input', 'br', 'hr', 'link', 'meta'];
-            if (!selfClosing.includes(tagName) && !beforeCursor.endsWith('/>')) {
-
-                if (afterCursor.match(new RegExp(`^</${tagName}>`))) {
-                return; 
-                }
-
-                const doc = cm.getValue();
-                const cursorPos = cm.indexFromPos(cursor);
-                const remainingText = doc.slice(cursorPos);
-
-                const hasClosingTag = new RegExp(`</${tagName}>`).test(remainingText);
-                if (!hasClosingTag) {
-
-                cm.replaceRange(`</${tagName}>`, cursor);
-
-                cm.setCursor({
-                    line: cursor.line,
-                    ch: cursor.ch
-                });
-                }
-            }
-            }
-        }
-        });
-
-    function setupConsoleCapture() {
+  function setupConsoleCapture() {
       const consoleOutput = document.getElementById('consoleOutput');
       const originalConsole = {
-        log: console.log,
-        warn: console.warn,
-        error: console.error
+          log: console.log,
+          warn: console.warn,
+          error: console.error
       };
 
       function createLogElement(message, type) {
-        const logElement = document.createElement('div');
-        logElement.classList.add('console-log', type);
-        if (typeof message === 'object') {
+          const logElement = document.createElement('div');
+          logElement.classList.add('console-log', type);
           try {
-            logElement.textContent = JSON.stringify(message, null, 2);
-          } catch {
-            logElement.textContent = String(message);
+              logElement.textContent = typeof message === 'object' ? JSON.stringify(message, null, 2) : String(message);
+          } catch (e) {
+              logElement.textContent = `Error logging: ${e.message}`;
           }
-        } else {
-          logElement.textContent = String(message);
-        }
-        return logElement;
+          return logElement;
       }
 
       console.log = function(...args) {
-        args.forEach(arg => {
-          consoleOutput.appendChild(createLogElement(arg, 'log'));
-        });
-        originalConsole.log(...args);
+          args.forEach(arg => consoleOutput.appendChild(createLogElement(arg, 'log')));
+          originalConsole.log(...args);
       };
 
       console.warn = function(...args) {
-        args.forEach(arg => {
-          consoleOutput.appendChild(createLogElement(arg, 'warn'));
-        });
-        originalConsole.warn(...args);
+          args.forEach(arg => consoleOutput.appendChild(createLogElement(arg, 'warn')));
+          originalConsole.warn(...args);
       };
 
       console.error = function(...args) {
-        args.forEach(arg => {
-          consoleOutput.appendChild(createLogElement(arg, 'error'));
-        });
-        originalConsole.error(...args);
+          args.forEach(arg => consoleOutput.appendChild(createLogElement(arg, 'error')));
+          originalConsole.error(...args);
       };
-    }
+  }
 
-    function toggleConsole() {
-      const consoleSection = document.getElementById('consoleSection');
-      if (consoleSection.style.display === 'none' || consoleSection.style.display === '') {
-        consoleSection.style.display = 'block';
-        verticalResizer.style.display = 'flex';
-        rightPanel.style.gridTemplateRows = `1fr 5px 150px`;
-      } else {
-        consoleSection.style.display = 'none';
-        verticalResizer.style.display = 'none';
-        rightPanel.style.gridTemplateRows = `1fr`;
-      }
-    }
-
-    editor.on('keyup', (cm, event) => {
-      if (!autocompleteToggle.checked) return;
-      const triggers = /[a-zA-Z<>="'\s]/;
-      if (triggers.test(String.fromCharCode(event.keyCode))) {
-        cm.showHint({ completeSingle: false });
-      }
-    });
-
-    editor.on('cursorActivity', function(cm) {
-      cm.getAllMarks().forEach(marker => {
-        if (marker.className === 'highlight-occurrence') marker.clear();
-      });
-      const selection = cm.getSelection();
-      if (selection) {
-        const cursor = cm.getSearchCursor(selection);
-        while (cursor.findNext()) {
-          cm.markText(cursor.from(), cursor.to(), { className: 'highlight-occurrence' });
-        }
-      }
-    });
-
-    editor.on('focus', function(cm) {
-      cm.refresh();
-    });
-
-    let previewTimeout;
-    editor.on('change', () => {
-      clearTimeout(previewTimeout);
-      previewTimeout = setTimeout(updatePreview, 500);
-      autoSave();
-    });
-
-    function updatePreview() {
+  function clearConsole() {
       const consoleOutput = document.getElementById('consoleOutput');
       consoleOutput.innerHTML = '';
+  }
+
+  function toggleConsole() {
+      const consoleSection = document.getElementById('consoleSection');
+      if (consoleSection.style.display === 'none' || consoleSection.style.display === '') {
+          consoleSection.style.display = 'block';
+          verticalResizer.style.display = 'flex';
+          rightPanel.style.gridTemplateRows = `1fr 5px 150px`;
+      } else {
+          consoleSection.style.display = 'none';
+          verticalResizer.style.display = 'none';
+          rightPanel.style.gridTemplateRows = `1fr`;
+      }
+  }
+
+  function updatePreview() {
+      const consoleOutput = document.getElementById('consoleOutput');
+      consoleOutput.innerHTML = '';
+      previewLoading.style.display = 'block';
 
       const code = editor.getValue();
       const iframe = document.createElement('iframe');
@@ -520,46 +516,50 @@
       const doc = iframe.contentDocument || iframe.contentWindow.document;
 
       iframe.contentWindow.console = {
-        log: (...args) => {
-          args.forEach(arg => {
-            const logElement = document.createElement('div');
-            logElement.classList.add('console-log', 'log');
-            logElement.textContent = String(arg);
-            consoleOutput.appendChild(logElement);
-          });
-        },
-        warn: (...args) => {
-          args.forEach(arg => {
-            const logElement = document.createElement('div');
-            logElement.classList.add('console-log', 'warn');
-            logElement.textContent = String(arg);
-            consoleOutput.appendChild(logElement);
-          });
-        },
-        error: (...args) => {
-          args.forEach(arg => {
-            const logElement = document.createElement('div');
-            logElement.classList.add('console-log', 'error');
-            logElement.textContent = String(arg);
-            consoleOutput.appendChild(logElement);
-          });
-        }
+          log: (...args) => {
+              args.forEach(arg => {
+                  const logElement = document.createElement('div');
+                  logElement.classList.add('console-log', 'log');
+                  logElement.textContent = String(arg);
+                  consoleOutput.appendChild(logElement);
+              });
+          },
+          warn: (...args) => {
+              args.forEach(arg => {
+                  const logElement = document.createElement('div');
+                  logElement.classList.add('console-log', 'warn');
+                  logElement.textContent = String(arg);
+                  consoleOutput.appendChild(logElement);
+              });
+          },
+          error: (...args) => {
+              args.forEach(arg => {
+                  const logElement = document.createElement('div');
+                  logElement.classList.add('console-log', 'error');
+                  logElement.textContent = String(arg);
+                  consoleOutput.appendChild(logElement);
+              });
+          }
       };
 
       doc.open();
       doc.write(code);
       doc.close();
-    }
 
-    function popOutCode() {
+      setTimeout(() => {
+          previewLoading.style.display = 'none';
+      }, 100);
+  }
+
+  function popOutCode() {
       const code = editor.getValue();
       const blob = new Blob([code], { type: 'text/html' });
       const url = URL.createObjectURL(blob);
       window.open(url, '_blank');
       setTimeout(() => URL.revokeObjectURL(url), 1000);
-    }
+  }
 
-    function exportHTML() {
+  function exportHTML() {
       const code = editor.getValue();
       const blob = new Blob([code], { type: 'text/html' });
       const url = URL.createObjectURL(blob);
@@ -570,41 +570,41 @@
       a.click();
       document.body.removeChild(a);
       setTimeout(() => URL.revokeObjectURL(url), 1000);
-    }
+  }
 
-    fileInput.addEventListener("change", function (event) {
+  fileInput.addEventListener("change", function(event) {
       const file = event.target.files[0];
       if (!file) return;
       const reader = new FileReader();
-      reader.onload = function () {
-        editor.setValue(reader.result);
+      reader.onload = function() {
+          editor.setValue(reader.result);
       };
       reader.readAsText(file);
-    });
+  });
 
-    function toggleFindReplace() {
+  function toggleFindReplace() {
       findReplaceModal.style.display = 
-        findReplaceModal.style.display === 'block' ? 'none' : 'block';
+          findReplaceModal.style.display === 'block' ? 'none' : 'block';
       findTextInput.value = '';
       replaceTextInput.value = '';
       if (findReplaceModal.style.display === 'none') {
-        editor.getAllMarks().forEach(marker => {
-          if (marker.className === 'highlight-occurrence') marker.clear();
-        });
+          const session = editor.getSession();
+          markers.forEach(marker => session.removeMarker(marker));
+          markers = [];
       }
-    }
+  }
 
-    let isDraggingModal = false;
-    let modalOffsetX, modalOffsetY;
+  let isDraggingModal = false;
+  let modalOffsetX, modalOffsetY;
 
-    findReplaceHandle.addEventListener('mousedown', (e) => {
+  findReplaceHandle.addEventListener('mousedown', (e) => {
       isDraggingModal = true;
       modalOffsetX = e.clientX - findReplaceModal.offsetLeft;
       modalOffsetY = e.clientY - findReplaceModal.offsetTop;
       e.preventDefault();
-    });
+  });
 
-    document.addEventListener('mousemove', (e) => {
+  document.addEventListener('mousemove', (e) => {
       if (!isDraggingModal) return;
       let newX = e.clientX - modalOffsetX;
       let newY = e.clientY - modalOffsetY;
@@ -615,113 +615,151 @@
       findReplaceModal.style.top = `${newY}px`;
       findReplaceModal.style.right = 'auto';
       findReplaceModal.style.bottom = 'auto';
-    });
+  });
 
-    document.addEventListener('mouseup', () => {
+  document.addEventListener('mouseup', () => {
       isDraggingModal = false;
-    });
+  });
 
-    function executeFind() {
-      editor.operation(() => {
-        editor.getAllMarks().forEach(marker => {
-          if (marker.className === 'highlight-occurrence') marker.clear();
-        });
-        const searchText = findTextInput.value;
-        if (!searchText) return;
-        let cursor = editor.getSearchCursor(searchText);
-        while (cursor.findNext()) {
-          editor.markText(cursor.from(), cursor.to(), { className: 'highlight-occurrence' });
-        }
+  function executeFind() {
+      const session = editor.getSession();
+      markers.forEach(marker => session.removeMarker(marker));
+      markers = [];
+
+      const searchText = findTextInput.value;
+      if (!searchText) return;
+
+      const ranges = [];
+      const lines = session.getDocument().getAllLines();
+      for (let row = 0; row < lines.length; row++) {
+          let col = 0;
+          while (col < lines[row].length) {
+              const index = lines[row].indexOf(searchText, col);
+              if (index === -1) break;
+              ranges.push({
+                  start: { row, column: index },
+                  end: { row, column: index + searchText.length }
+              });
+              col = index + 1;
+          }
+      }
+
+      ranges.forEach(range => {
+          markers.push(session.addMarker(
+              new ace.Range(range.start.row, range.start.column, range.end.row, range.end.column),
+              'ace_highlight-occurrence',
+              'text'
+          ));
       });
-    }
+  }
 
-    function executeFindReplace(replaceAll) {
+  function executeFindReplace(replaceAll) {
       const findText = findTextInput.value;
       const replaceText = replaceTextInput.value;
       if (!findText) return;
-      let cursor = editor.getSearchCursor(findText);
+
+      const session = editor.getSession();
       let count = 0;
 
-      editor.operation(() => {
-        if (replaceAll) {
-          while (cursor.findNext()) {
-            cursor.replace(replaceText);
-            count++;
+      if (replaceAll) {
+          const lines = session.getDocument().getAllLines();
+          for (let row = 0; row < lines.length; row++) {
+              let line = lines[row];
+              let col = 0;
+              while (col < line.length) {
+                  const index = line.indexOf(findText, col);
+                  if (index === -1) break;
+                  session.replace(
+                      new ace.Range(row, index, row, index + findText.length),
+                      replaceText
+                  );
+                  line = session.getLine(row); // Update line after replace
+                  col = index + replaceText.length;
+                  count++;
+              }
           }
           saveStatus.textContent = `Replaced ${count} occurrence(s)`;
-        } else {
-          if (cursor.findNext()) {
-            editor.setSelection(cursor.from(), cursor.to());
-            if (confirm("Replace this occurrence?")) {
-              cursor.replace(replaceText);
-              saveStatus.textContent = "Replaced 1 occurrence";
-            }
+      } else {
+          const cursor = editor.getCursorPosition();
+          const line = session.getLine(cursor.row);
+          const index = line.indexOf(findText, cursor.column);
+          if (index !== -1) {
+              if (confirm("Replace this occurrence?")) {
+                  session.replace(
+                      new ace.Range(cursor.row, index, cursor.row, index + findText.length),
+                      replaceText
+                  );
+                  saveStatus.textContent = "Replaced 1 occurrence";
+                  count++;
+              }
           } else {
-            alert("Text not found");
+              alert("Text not found");
           }
-        }
-      });
+      }
+
       updatePreview();
       autoSave();
       setTimeout(() => saveStatus.textContent = "", 2000);
       executeFind();
-    }
+  }
 
-    let saveTimeout;
-    function autoSave() {
+  let saveTimeout;
+  function autoSave() {
       clearTimeout(saveTimeout);
       saveTimeout = setTimeout(() => {
-        const code = editor.getValue();
-        localStorage.setItem('htmlPlaygroundCode', code);
-        saveStatus.textContent = 'Saved ' + new Date().toLocaleTimeString();
-        setTimeout(() => saveStatus.textContent = '', 2000);
+          const code = editor.getValue();
+          localStorage.setItem('htmlPlaygroundCode', code);
+          saveStatus.textContent = 'Saved ' + new Date().toLocaleTimeString();
+          setTimeout(() => saveStatus.textContent = '', 2000);
       }, 1000);
-    }
+  }
 
-    function toggleAutocomplete() {
+  function toggleAutocomplete() {
       const isEnabled = autocompleteToggle.checked;
       localStorage.setItem('htmlPlaygroundAutocomplete', isEnabled);
-    }
+      editor.setOption('enableLiveAutocompletion', isEnabled);
+  }
 
-    function toggleDarkMode() {
+  function toggleDarkMode() {
       editorWrapper.classList.toggle('dark-mode');
       const isDarkMode = editorWrapper.classList.contains('dark-mode');
-      editor.setOption('theme', isDarkMode ? 'dracula' : 'default');
+      editor.setTheme(isDarkMode ? "ace/theme/monokai" : "ace/theme/textmate");
       localStorage.setItem('htmlPlaygroundDarkMode', isDarkMode);
-    }
+  }
 
-    function loadSavedPreferences() {
+  function loadSavedPreferences() {
       const savedCode = localStorage.getItem('htmlPlaygroundCode');
       if (savedCode) {
-        editor.setValue(savedCode);
-        updatePreview();
+          editor.setValue(savedCode);
+          updatePreview();
       }
       const savedDarkMode = localStorage.getItem('htmlPlaygroundDarkMode') === 'true';
       if (savedDarkMode) {
-        darkModeToggle.checked = true;
-        editorWrapper.classList.add('dark-mode');
-        editor.setOption('theme', 'dracula');
+          darkModeToggle.checked = true;
+          editorWrapper.classList.add('dark-mode');
+          editor.setTheme("ace/theme/monokai");
       }
       const savedAutocomplete = localStorage.getItem('htmlPlaygroundAutocomplete');
       const isAutocompleteEnabled = savedAutocomplete !== null ? savedAutocomplete === 'true' : true;
       autocompleteToggle.checked = isAutocompleteEnabled;
-      localStorage.setItem('htmlPlaygroundAutocomplete', isAutocompleteEnabled);
-    }
+      editor.setOption('enableLiveAutocompletion', isAutocompleteEnabled);
+  }
 
-    let isDragging = false;
-    resizer.addEventListener("pointerdown", (e) => {
+  let isDragging = false;
+  resizer.addEventListener("pointerdown", (e) => {
       isDragging = true;
       document.body.style.cursor = 'col-resize';
       rightPanel.style.pointerEvents = 'none';
       document.addEventListener("pointermove", resizePanels);
       document.addEventListener("pointerup", () => {
-        isDragging = false;
-        document.body.style.cursor = 'default';
-        rightPanel.style.pointerEvents = 'auto';
-        document.removeEventListener("pointermove", resizePanels);
+          isDragging = false;
+          document.body.style.cursor = 'default';
+          rightPanel.style.pointerEvents = 'auto';
+          document.removeEventListener("pointermove", resizePanels);
       });
-    });
-    function resizePanels(e) {
+  });
+
+  function resizePanels(e) {
       if (!isDragging) return;
       const containerRect = container.getBoundingClientRect();
       const containerWidth = containerRect.width;
@@ -729,25 +767,25 @@
       const minWidth = 100;
       const newLeftWidth = Math.max(minWidth, Math.min(mouseXRelative, containerWidth - minWidth - 5));
       container.style.gridTemplateColumns = `${newLeftWidth}px 5px ${containerWidth - newLeftWidth - 5}px`;
-      editor.refresh();
-    }
+      editor.renderer.updateFull();
+  }
 
-    let isDraggingVertical = false;
-    verticalResizer.addEventListener("pointerdown", (e) => {
+  let isDraggingVertical = false;
+  verticalResizer.addEventListener("pointerdown", (e) => {
       isDraggingVertical = true;
       verticalResizer.setPointerCapture(e.pointerId);
       document.body.style.cursor = 'row-resize';
-    });
-    verticalResizer.addEventListener("pointermove", (e) => {
+      document.addEventListener("pointermove", resizeVerticalPanels);
+      document.addEventListener("pointerup", () => {
+          isDraggingVertical = false;
+          document.body.style.cursor = 'default';
+          verticalResizer.releasePointerCapture(e.pointerId);
+          document.removeEventListener("pointermove", resizeVerticalPanels);
+      });
+  });
+
+  function resizeVerticalPanels(e) {
       if (!isDraggingVertical) return;
-      resizeVerticalPanels(e);
-    });
-    verticalResizer.addEventListener("pointerup", (e) => {
-      isDraggingVertical = false;
-      document.body.style.cursor = 'default';
-      verticalResizer.releasePointerCapture(e.pointerId);
-    });
-    function resizeVerticalPanels(e) {
       const panelRect = rightPanel.getBoundingClientRect();
       const offsetY = e.clientY - panelRect.top;
       const minHeight = 50;
@@ -755,11 +793,9 @@
       const newPreviewHeight = Math.max(minHeight, Math.min(offsetY, maxHeight));
       const consoleHeight = panelRect.height - newPreviewHeight - 5;
       rightPanel.style.gridTemplateRows = `${newPreviewHeight}px 5px ${consoleHeight}px`;
-    }
+  }
 
-    setupConsoleCapture();
-    loadSavedPreferences();
-    updatePreview();
-  </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9261806d0afebd2b',t:'MTc0MjkzODE0NC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
-
+  setupConsoleCapture();
+  loadSavedPreferences();
+  updatePreview();
+</script>
