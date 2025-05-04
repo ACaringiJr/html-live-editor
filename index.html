@@ -415,6 +415,16 @@
       }, 250); // 250ms delay for responsiveness
   });
 
+  // Auto-preview and auto-save on change
+  let previewTimeout;
+  editor.on('change', () => {
+      clearTimeout(previewTimeout);
+      previewTimeout = setTimeout(() => {
+          updatePreview();
+          autoSave();
+      }, 500); // 500ms debounce for preview and save
+  });
+
   // Highlight selected text
   let markers = [];
   editor.on('changeSelection', () => {
@@ -549,6 +559,13 @@
       setTimeout(() => {
           previewLoading.style.display = 'none';
       }, 100);
+  }
+
+  function autoSave() {
+      const code = editor.getValue();
+      localStorage.setItem('htmlPlaygroundCode', code);
+      saveStatus.textContent = 'Saved ' + new Date().toLocaleTimeString();
+      setTimeout(() => saveStatus.textContent = '', 2000);
   }
 
   function popOutCode() {
@@ -701,17 +718,6 @@
       autoSave();
       setTimeout(() => saveStatus.textContent = "", 2000);
       executeFind();
-  }
-
-  let saveTimeout;
-  function autoSave() {
-      clearTimeout(saveTimeout);
-      saveTimeout = setTimeout(() => {
-          const code = editor.getValue();
-          localStorage.setItem('htmlPlaygroundCode', code);
-          saveStatus.textContent = 'Saved ' + new Date().toLocaleTimeString();
-          setTimeout(() => saveStatus.textContent = '', 2000);
-      }, 1000);
   }
 
   function toggleAutocomplete() {
