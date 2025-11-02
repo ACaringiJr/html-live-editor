@@ -530,55 +530,47 @@
   }
 
   function updatePreview() {
-      const consoleOutput = document.getElementById('consoleOutput');
-      consoleOutput.innerHTML = '';
-      previewLoading.style.display = 'block';
-
-      const code = editor.getValue();
-      const iframe = document.createElement('iframe');
-      iframe.style.width = '100%';
-      iframe.style.height = '100%';
-      iframe.style.border = 'none';
-      preview.innerHTML = '';
-      preview.appendChild(iframe);
-      const blob = new Blob([code], {type: 'text/html'});
-      iframe.src = URL.createObjectURL(blob);
-
-      iframe.contentWindow.console = {
-          log: (...args) => {
-              args.forEach(arg => {
-                  const logElement = document.createElement('div');
-                  logElement.classList.add('console-log', 'log');
-                  logElement.textContent = String(arg);
-                  consoleOutput.appendChild(logElement);
-              });
-          },
-          warn: (...args) => {
-              args.forEach(arg => {
-                  const logElement = document.createElement('div');
-                  logElement.classList.add('console-log', 'warn');
-                  logElement.textContent = String(arg);
-                  consoleOutput.appendChild(logElement);
-              });
-          },
-          error: (...args) => {
-              args.forEach(arg => {
-                  const logElement = document.createElement('div');
-                  logElement.classList.add('console-log', 'error');
-                  logElement.textContent = String(arg);
-                  consoleOutput.appendChild(logElement);
-              });
-          }
-      };
-
-      doc.open();
-      doc.write(code);
-      doc.close();
-
-      setTimeout(() => {
-          previewLoading.style.display = 'none';
-      }, 100);
+    const consoleOutput = document.getElementById('consoleOutput');
+    consoleOutput.innerHTML = '';
+    previewLoading.style.display = 'block';
+  
+    const code = editor.getValue();
+    const iframe = document.createElement('iframe');
+    iframe.style.width = '100%';
+    iframe.style.height = '100%';
+    iframe.style.border = 'none';
+    iframe.sandbox = 'allow-scripts allow-same-origin';
+    preview.innerHTML = '';
+    preview.appendChild(iframe);
+  
+    // Wrap user code with console redirector script
+    const wrappedCode = `
+      <script>
+        const send = (type, args) => parent.postMessage({type, args}, '*');
+        ['log','warn','error'].forEach(fn => {
+          const orig = console[fn];
+          console[fn] = (...a) => { send(fn, a.map(x => String(x))); orig.apply(console, a); };
+        });
+        window.onerror = (msg, src, line, col) => send('error', [msg + ' (' + line + ':' + col + ')']);
+      <\\/script>
+      ${code}
+    `;
+    const blob = new Blob([wrappedCode], { type: 'text/html' });
+    iframe.src = URL.createObjectURL(blob);
+  
+    setTimeout(() => { previewLoading.style.display = 'none'; }, 100);
   }
+  
+  // Listen for logs from the iframe
+  window.addEventListener('message', (e) => {
+    const { type, args } = e.data || {};
+    if (!type || !args) return;
+    const log = document.createElement('div');
+    log.classList.add('console-log', type);
+    log.textContent = args.join(' ');
+    document.getElementById('consoleOutput').appendChild(log);
+  });
+
 
   function autoSave() {
       const code = editor.getValue();
