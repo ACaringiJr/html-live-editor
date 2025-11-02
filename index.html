@@ -4,6 +4,10 @@
 
 <style>
   :root {
+  .save-status {
+    transition: opacity 0.4s ease;
+  }
+
     --editor-bg-primary: #ffffff;
     --editor-bg-secondary: #f0f0f0;
     --editor-text-primary: #000000;
@@ -35,7 +39,7 @@
     display: grid;
     grid-template-columns: 1fr 5px 1fr;
     grid-template-rows: 100%;
-    height: 100vh;
+    min-height: 100dvh;
   }
 
   .editor-wrapper {
@@ -258,6 +262,14 @@
     color: var(--editor-text-primary);
     border-radius: 3px 3px 0 0;
   }
+
+  body {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .buttons, .mode-toggle {
+    padding-bottom: calc(10px + env(safe-area-inset-bottom));
+  }
 </style>
 
 <div class="container">
@@ -299,12 +311,19 @@
       <button class="close-btn" onclick="toggleFindReplace()">×</button>
       <input type="text" id="findText" placeholder="Find">
       <input type="text" id="replaceText" placeholder="Replace with">
-      <div class="modal-buttons">
+      
+<div style="margin-top:10px;">
+  <label style="font-size:12px;color:var(--editor-text-primary);">
+    <input type="checkbox" id="regexToggle"> Use Regular Expressions
+  </label>
+</div>
+<div class="modal-buttons">
         <button onclick="executeFind()">Find</button>
         <button onclick="executeFindReplace(true)">Replace All</button>
         <button onclick="executeFindReplace(false)">Replace</button>
       </div>
     </div>
+
   </div>
   <div class="resizer"></div>
   <div id="rightPanel">
@@ -522,7 +541,8 @@
       iframe.style.border = 'none';
       preview.innerHTML = '';
       preview.appendChild(iframe);
-      const doc = iframe.contentDocument || iframe.contentWindow.document;
+      const blob = new Blob([code], {type: 'text/html'});
+      iframe.src = URL.createObjectURL(blob);
 
       iframe.contentWindow.console = {
           log: (...args) => {
@@ -563,7 +583,7 @@
   function autoSave() {
       const code = editor.getValue();
       localStorage.setItem('htmlPlaygroundCode', code);
-      saveStatus.textContent = 'Saved ' + new Date().toLocaleTimeString();
+      saveStatus.textContent = 'Saved ' + new Date().toLocaleTimeString(); saveStatus.style.opacity = 1; setTimeout(() => saveStatus.style.opacity = 0, 1000);
       setTimeout(() => saveStatus.textContent = '', 2000);
   }
 
@@ -671,6 +691,14 @@
 
   function executeFindReplace(replaceAll) {
       const findText = findTextInput.value;
+  const useRegex = document.getElementById('regexToggle').checked;
+  const flags = 'g';
+  let regexObj = null;
+  if (useRegex) {
+      try { regexObj = new RegExp(findText, flags); }
+      catch(e) { alert('Invalid regex: ' + e.message); return; }
+  }
+
       const replaceText = replaceTextInput.value;
       if (!findText) return;
 
@@ -683,7 +711,7 @@
               let line = lines[row];
               let col = 0;
               while (col < line.length) {
-                  const index = line.indexOf(findText, col);
+                  const index = useRegex ? line.slice(col).search(regexObj) + col : line.indexOf(findText, col);
                   if (index === -1) break;
                   session.replace(
                       new ace.Range(row, index, row, index + findText.length),
@@ -698,7 +726,7 @@
       } else {
           const cursor = editor.getCursorPosition();
           const line = session.getLine(cursor.row);
-          const index = line.indexOf(findText, cursor.column);
+          const index = useRegex ? line.slice(cursor.column).search(regexObj) + cursor.column : line.indexOf(findText, cursor.column);
           if (index !== -1) {
               if (confirm("Replace this occurrence?")) {
                   session.replace(
@@ -738,13 +766,13 @@
           editor.setValue(savedCode);
           updatePreview();
       }
-      const savedDarkMode = localStorage.getItem('htmlPlaygroundDarkMode') === 'true';
+      const savedDarkMode = true;
       if (savedDarkMode) {
           darkModeToggle.checked = true;
           editorWrapper.classList.add('dark-mode');
           editor.setTheme("ace/theme/monokai");
       }
-      const savedAutocomplete = localStorage.getItem('htmlPlaygroundAutocomplete');
+      const savedAutocomplete = "true";
       const isAutocompleteEnabled = savedAutocomplete !== null ? savedAutocomplete === 'true' : true;
       autocompleteToggle.checked = isAutocompleteEnabled;
       editor.setOption('enableLiveAutocompletion', isAutocompleteEnabled);
@@ -801,6 +829,20 @@
   }
 
   setupConsoleCapture();
+  // Restore previous layout width
+  const storedCols = localStorage.getItem('htmlPlaygroundCols');
+  if (storedCols) container.style.gridTemplateColumns = storedCols;
+  // Save layout width
+  new ResizeObserver(() => {
+      localStorage.setItem('htmlPlaygroundCols', container.style.gridTemplateColumns);
+  }).observe(container);
+
   loadSavedPreferences();
+  // Force dark mode defaults
+  darkModeToggle.checked = true;
+  editorWrapper.classList.add("dark-mode");
+  editor.setTheme("ace/theme/monokai");
+  autocompleteToggle.checked = true;
+  editor.setOption("enableLiveAutocompletion", true);
   updatePreview();
 </script>
