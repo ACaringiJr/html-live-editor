@@ -1,5 +1,3 @@
-<!DOCTYPE html>
-<html>
 <meta charset="UTF-8">
 <title>HTML Playground | Live Code Editor</title>
 <link rel="icon" type="image/x-icon" href="https://img.icons8.com/?size=256&id=20909&format=png">
@@ -14,11 +12,12 @@
     --match-bracket-outline: #44475a;
     --match-bracket-color: #ff0000;
   }
-
+  
+  /* Smooth transition for save indicator */
   .save-status {
     transition: opacity 0.4s ease;
   }
-
+  
   .editor-wrapper.dark-mode {
     --editor-bg-primary: #272822;
     --editor-bg-secondary: #3a3d4b;
@@ -28,7 +27,7 @@
     --match-bracket-outline: #ffffff;
     --match-bracket-color: #ff5555;
   }
-
+  
   html, body {
     height: 100%;
     margin: 0;
@@ -36,19 +35,21 @@
     overflow: hidden;
     font-family: Arial, sans-serif;
   }
-
+  
   body {
     padding-top: env(safe-area-inset-top);
     padding-bottom: env(safe-area-inset-bottom);
   }
-
+  
+  /* Container and layout */
   .container {
     display: grid;
     grid-template-columns: 1fr 5px 1fr;
     grid-template-rows: 100%;
     min-height: 100dvh;
   }
-
+  
+  /* Editor section */
   .editor-wrapper {
     display: flex;
     flex-direction: column;
@@ -56,18 +57,19 @@
     background-color: var(--editor-bg-primary);
     position: relative;
   }
-
+  
   #editor {
     flex-grow: 1;
     width: 100%;
     background-color: var(--editor-bg-primary);
     color: var(--editor-text-primary);
   }
-
+  
   .ace_editor {
     border: 1px solid var(--editor-border-color);
   }
-
+  
+  /* Horizontal resizer */
   .resizer {
     background: #ccc;
     cursor: col-resize;
@@ -77,29 +79,30 @@
     z-index: 10;
     position: relative;
   }
-
+  
   .resizer::after {
     content: '⋮';
     color: #666;
     font-size: 20px;
   }
-
+  
   .resizer:hover {
     background: #999;
   }
-
+  
+  /* Right panel (preview + console) */
   #rightPanel {
     display: grid;
     grid-template-rows: 1fr;
     height: 100%;
   }
-
+  
   #preview {
     overflow: auto;
     background: var(--editor-bg-secondary);
     position: relative;
   }
-
+  
   .preview-loading {
     position: absolute;
     top: 10px;
@@ -110,7 +113,8 @@
     border-radius: 3px;
     display: none;
   }
-
+  
+  /* Console */
   #consoleSection {
     background: #1a1a1a;
     color: #ffffff;
@@ -119,7 +123,7 @@
     overflow-y: auto;
     display: none;
   }
-
+  
   .console-log {
     margin: 2px 0;
     word-wrap: break-word;
@@ -127,7 +131,8 @@
   .console-log.log { color: #ffffff; }
   .console-log.error { color: #ff6b6b; }
   .console-log.warn { color: #feca57; }
-
+  
+  /* Console resizer */
   .vertical-resizer {
     background: #ccc;
     cursor: row-resize;
@@ -144,7 +149,8 @@
   .vertical-resizer:hover {
     background: #999;
   }
-
+  
+  /* Toolbar buttons */
   .buttons {
     padding: 10px;
     background: var(--editor-bg-secondary);
@@ -153,7 +159,7 @@
     align-items: center;
     padding-bottom: calc(10px + env(safe-area-inset-bottom));
   }
-
+  
   .buttons button {
     margin: 0 5px;
     cursor: pointer;
@@ -163,11 +169,11 @@
     border-radius: 3px;
     transition: background 0.2s;
   }
-
+  
   .buttons button:hover {
     background: #d0d0d0;
   }
-
+  
   .editor-wrapper.dark-mode .buttons {
     background: var(--editor-bg-secondary);
   }
@@ -179,7 +185,8 @@
   .editor-wrapper.dark-mode .buttons button:hover {
     background: #55576a;
   }
-
+  
+  /* Mode toggles (dark mode, autocomplete) */
   .mode-toggle {
     display: flex;
     align-items: center;
@@ -189,19 +196,25 @@
     margin-right: 10px;
     margin-left: 20px;
   }
-
+  
+  /* Save status text */
   .save-status {
     color: #4CAF50;
     font-size: 12px;
     margin-left: 10px;
   }
-
+  
+  /* Highlighted text */
   .ace_highlight-occurrence {
     background-color: var(--highlight-bg);
     position: absolute;
     z-index: 20;
   }
-
+  
+  /* ------------------------------------------------------------------ */
+  /*                         FIND & REPLACE MODAL                       */
+  /* ------------------------------------------------------------------ */
+  
   #findReplaceModal {
     position: absolute;
     top: 20px;
@@ -214,9 +227,10 @@
     display: none;
     box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
     color: var(--editor-text-primary);
-    padding: 55px 15px 20px 15px; 
+    padding: 55px 15px 20px 15px; /* space for header & close button */
   }
-
+  
+  /* Modal header (draggable area) */
   .draggable-handle {
     position: absolute;
     top: 0;
@@ -232,7 +246,8 @@
     cursor: move;
     letter-spacing: 0.3px;
   }
-
+  
+  /* Close button */
   #findReplaceModal .close-btn {
     position: absolute;
     top: 5px;
@@ -248,7 +263,8 @@
     color: #ff5555;
     transform: scale(1.2);
   }
-
+  
+  /* Inputs */
   #findReplaceModal input[type="text"] {
     width: 100%;
     margin: 8px 0;
@@ -265,7 +281,8 @@
     border-color: #50fa7b;
     box-shadow: 0 0 0 2px rgba(80, 250, 123, 0.25);
   }
-
+  
+  /* Centered regex label */
   #findReplaceModal div label {
     display: flex;
     align-items: center;
@@ -278,7 +295,8 @@
     margin-right: 6px;
     accent-color: #50fa7b;
   }
-
+  
+  /* Buttons row */
   #findReplaceModal .modal-buttons {
     display: flex;
     justify-content: space-between;
@@ -302,25 +320,27 @@
   #findReplaceModal .modal-buttons button:active {
     transform: scale(0.96);
   }
-
+  
   .mode-toggle {
     display: flex;
-    align-items: center;         
-    gap: 10px;                   
+    align-items: center;         /* centers labels vertically with checkboxes */
+    gap: 10px;                   /* adds a little horizontal space */
   }
-
+  
   .mode-toggle label {
-    color: var(--editor-text-primary);  
+    color: var(--editor-text-primary);  /* ensures text color matches theme */
     font-size: 13px;
     display: flex;
-    align-items: center;         
-    margin: 0;                   
+    align-items: center;         /* centers label text next to checkbox */
+    margin: 0;                   /* remove extra margins */
   }
-
+  
   .mode-toggle input[type="checkbox"] {
-    accent-color: #50fa7b;       
-    transform: scale(1.1);       
+    accent-color: #50fa7b;       /* bright green, matches regex toggle style */
+    transform: scale(1.1);       /* makes checkboxes a bit easier to tap */
   }
+  
+  
 
 </style>
 
@@ -363,7 +383,7 @@
       <button class="close-btn" onclick="toggleFindReplace()">×</button>
       <input type="text" id="findText" placeholder="Find">
       <input type="text" id="replaceText" placeholder="Replace with">
-
+      
 <div style="margin-top:10px;">
   <label style="font-size:12px;color:var(--editor-text-primary);">
     <input type="checkbox" id="regexToggle"> Use Regular Expressions
@@ -411,6 +431,7 @@
   const findReplaceHandle = findReplaceModal.querySelector('.draggable-handle');
   const verticalResizer = document.getElementById('verticalResizer');
 
+  // Initialize Ace editor
   ace.require("ace/ext/language_tools");
   const editor = ace.edit("editor", {
       mode: "ace/mode/html",
@@ -419,18 +440,19 @@
       wrap: true,
       showLineNumbers: true,
       enableBasicAutocompletion: true,
-      enableLiveAutocompletion: false, 
+      enableLiveAutocompletion: false, // Controlled manually
       enableSnippets: false,
       tabSize: 2,
       useSoftTabs: true,
       highlightActiveLine: true,
       fontSize: 14,
-      autoIndent: false 
+      autoIndent: false // Disable default auto-indent
   });
-
+  
+  // Override built-in find/replace keybindings so they trigger our custom modal
   editor.commands.bindKey("Ctrl-F", null);
   editor.commands.bindKey("Ctrl-H", null);
-
+  
   editor.commands.addCommand({
     name: "openFindModal",
     bindKey: { win: "Ctrl-F", mac: "Command-F" },
@@ -440,7 +462,7 @@
     },
     readOnly: true
   });
-
+  
   editor.commands.addCommand({
     name: "openReplaceModal",
     bindKey: { win: "Ctrl-H", mac: "Command-Option-F" },
@@ -451,6 +473,8 @@
     readOnly: true
   });
 
+
+  // Configure autocomplete
   editor.commands.addCommand({
       name: 'showAutocomplete',
       bindKey: { win: 'Ctrl-Space', mac: 'Ctrl-Space' },
@@ -467,8 +491,9 @@
       const line = session.getLine(cursor.row);
       const prefix = line.slice(0, cursor.column);
       const token = session.getTokenAt(cursor.row, cursor.column);
-      const mode = session.getMode().$id.split('/').pop(); 
+      const mode = session.getMode().$id.split('/').pop(); // html, css, javascript
 
+      // If last character is >, close autocomplete and skip
       if (prefix.endsWith('>')) {
           if (editor.completer && editor.completer.popup) {
               editor.completer.detach();
@@ -476,21 +501,23 @@
           return;
       }
 
+      // Skip if in a string, comment, or empty token
       if (token && (token.type.includes('string') || token.type.includes('comment') || !token.value.trim())) {
           return;
       }
 
+      // Context-specific trigger conditions
       const triggers = {
           html: () => {
-              return (prefix.match(/<([a-zA-Z][a-zA-Z0-9]*)\s*$/) || 
-                     prefix.match(/<([a-zA-Z][a-zA-Z0-9]*)\s+[a-zA-Z-]+=["']?$/) || 
-                     prefix.match(/<$/)) && !prefix.match(/<[^>]*>$/); 
+              return (prefix.match(/<([a-zA-Z][a-zA-Z0-9]*)\s*$/) || // Attributes
+                     prefix.match(/<([a-zA-Z][a-zA-Z0-9]*)\s+[a-zA-Z-]+=["']?$/) || // Attribute values
+                     prefix.match(/<$/)) && !prefix.match(/<[^>]*>$/); // Start of a tag, not after closing
           },
           css: () => {
-              return prefix.match(/{[^{}]*$/) || prefix.match(/:[^;]*$/); 
+              return prefix.match(/{[^{}]*$/) || prefix.match(/:[^;]*$/); // Properties or values
           },
           javascript: () => {
-              return prefix.match(/\.$/) || prefix.match(/[a-zA-Z_][a-zA-Z0-9_]*$/); 
+              return prefix.match(/\.$/) || prefix.match(/[a-zA-Z_][a-zA-Z0-9_]*$/); // Variables, properties, or keywords
           }
       };
 
@@ -500,18 +527,20 @@
       clearTimeout(autocompleteTimeout);
       autocompleteTimeout = setTimeout(() => {
           editor.completer.showPopup(editor);
-      }, 250); 
+      }, 250); // 250ms delay for responsiveness
   });
 
+  // Auto-preview and auto-save on change
   let previewTimeout;
   editor.on('change', () => {
       clearTimeout(previewTimeout);
       previewTimeout = setTimeout(() => {
           updatePreview();
           autoSave();
-      }, 500); 
+      }, 500); // 500ms debounce for preview and save
   });
 
+  // Highlight selected text
   let markers = [];
   editor.on('changeSelection', () => {
       const session = editor.getSession();
@@ -601,7 +630,7 @@
     const consoleOutput = document.getElementById('consoleOutput');
     consoleOutput.innerHTML = '';
     previewLoading.style.display = 'block';
-
+  
     const code = editor.getValue();
     const iframe = document.createElement('iframe');
     iframe.style.width = '100%';
@@ -610,7 +639,8 @@
     iframe.sandbox = 'allow-scripts allow-same-origin';
     preview.innerHTML = '';
     preview.appendChild(iframe);
-
+  
+    // Wrap user code with console redirector script
     const wrappedCode = `
       <script>
         const send = (type, args) => parent.postMessage({type, args}, '*');
@@ -625,10 +655,11 @@
 
     const blob = new Blob([wrappedCode], { type: 'text/html' });
     iframe.src = URL.createObjectURL(blob);
-
+  
     setTimeout(() => { previewLoading.style.display = 'none'; }, 100);
   }
-
+  
+  // Listen for logs from the iframe
   window.addEventListener('message', (e) => {
     const { type, args } = e.data || {};
     if (!type || !args) return;
@@ -637,6 +668,7 @@
     log.textContent = args.join(' ');
     document.getElementById('consoleOutput').appendChild(log);
   });
+
 
   function autoSave() {
       const code = editor.getValue();
@@ -719,14 +751,15 @@
     const session = editor.getSession();
     markers.forEach(marker => session.removeMarker(marker));
     markers = [];
-
+  
     const findText = findTextInput.value;
     const useRegex = document.getElementById('regexToggle').checked;
     if (!findText) return;
-
+  
     const lines = session.getDocument().getAllLines();
     const ranges = [];
-
+  
+    // Build regex or fallback to plain text search
     let regexObj = null;
     if (useRegex) {
       try {
@@ -736,13 +769,13 @@
         return;
       }
     }
-
+  
     for (let row = 0; row < lines.length; row++) {
       const line = lines[row];
       if (useRegex) {
         let match;
         while ((match = regexObj.exec(line)) !== null) {
-
+          // prevent infinite loop on zero-length matches
           if (match[0].length === 0) {
             regexObj.lastIndex++;
             continue;
@@ -752,7 +785,7 @@
             end: { row, column: match.index + match[0].length }
           });
         }
-
+        // Reset regex state for next line
         regexObj.lastIndex = 0;
       } else {
         let col = 0;
@@ -767,7 +800,7 @@
         }
       }
     }
-
+  
     ranges.forEach(range => {
       markers.push(session.addMarker(
         new ace.Range(range.start.row, range.start.column, range.end.row, range.end.column),
@@ -776,6 +809,7 @@
       ));
     });
   }
+
 
   function executeFindReplace(replaceAll) {
       const findText = findTextInput.value;
@@ -805,7 +839,7 @@
                       new ace.Range(row, index, row, index + findText.length),
                       replaceText
                   );
-                  line = session.getLine(row); 
+                  line = session.getLine(row); // Update line after replace
                   col = index + replaceText.length;
                   count++;
               }
@@ -865,24 +899,26 @@
       autocompleteToggle.checked = isAutocompleteEnabled;
       editor.setOption('enableLiveAutocompletion', isAutocompleteEnabled);
   }
-
+  
   function loadRegexPreference() {
     const savedRegex = localStorage.getItem('htmlPlaygroundRegex');
     const regexToggle = document.getElementById('regexToggle');
-
+  
     if (savedRegex === null) {
-
+      // User has never toggled it before → default to ON
       regexToggle.checked = true;
       localStorage.setItem('htmlPlaygroundRegex', 'true');
     } else {
-
+      // Restore saved state
       regexToggle.checked = (savedRegex === 'true');
     }
-
+  
+    // When changed, save new state
     regexToggle.addEventListener('change', () => {
       localStorage.setItem('htmlPlaygroundRegex', regexToggle.checked);
     });
   }
+
 
   let isDragging = false;
   resizer.addEventListener("pointerdown", (e) => {
@@ -935,17 +971,17 @@
   }
 
   setupConsoleCapture();
-
+  // Restore previous layout width
   const storedCols = localStorage.getItem('htmlPlaygroundCols');
   if (storedCols) container.style.gridTemplateColumns = storedCols;
-
+  // Save layout width
   new ResizeObserver(() => {
       localStorage.setItem('htmlPlaygroundCols', container.style.gridTemplateColumns);
   }).observe(container);
 
   loadSavedPreferences();
   loadRegexPreference();
-
+  // Force dark mode defaults
   darkModeToggle.checked = true;
   editorWrapper.classList.add("dark-mode");
   editor.setTheme("ace/theme/monokai");
@@ -953,4 +989,3 @@
   editor.setOption("enableLiveAutocompletion", true);
   updatePreview();
 </script>
-</html>
